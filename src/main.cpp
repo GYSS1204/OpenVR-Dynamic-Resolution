@@ -28,10 +28,12 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "LanguageManager.h"
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
 // Loading png
 #include "lodepng.h"
+#include "../include/adl_sdk.h"
 
 // Tray icon
 #include "tray.h"
@@ -62,7 +64,7 @@ static constexpr const std::chrono::milliseconds refreshIntervalBackground = 167
 static constexpr const std::chrono::milliseconds refreshIntervalFocused = 33ms;		// 30fps
 
 static constexpr const int mainWindowWidth = 350;
-static constexpr const int mainWindowHeight = 304;
+static constexpr const int mainWindowHeight = 500;
 
 static constexpr const float bitsToGB = 1073741824;
 
@@ -75,6 +77,7 @@ bool trayQuit = false;
 // Initialization
 bool autoStart = 1;
 int minimizeOnStart = 0;
+int languageIndex = 0;
 // General
 int resChangeDelayMs = 3000;
 int dataAverageSamples = 128;
@@ -103,6 +106,8 @@ bool vramMonitorEnabled = true;
 bool vramOnlyMode = false;
 #pragma endregion
 
+
+
 /// Newline-delimited string to a set
 std::set<std::string> multilineStringToSet(const std::string &val)
 {
@@ -115,6 +120,8 @@ std::set<std::string> multilineStringToSet(const std::string &val)
 
 	return set;
 }
+
+
 
 /// Set to a space-delimited string
 std::string setToConfigString(std::set<std::string> &valSet)
@@ -147,6 +154,7 @@ bool loadSettings()
 		// Startup
 		autoStart = std::stoi(ini.GetValue("Startup", "autoStart", std::to_string(autoStart).c_str()));
 		minimizeOnStart = std::stoi(ini.GetValue("Startup", "minimizeOnStart", std::to_string(minimizeOnStart).c_str()));
+		languageIndex = std::stoi(ini.GetValue("Startup", "languageIndex", std::to_string(languageIndex).c_str()));
 		// General
 		resChangeDelayMs = std::stoi(ini.GetValue("General", "resChangeDelayMs", std::to_string(resChangeDelayMs).c_str()));
 		dataAverageSamples = std::stoi(ini.GetValue("General", "dataAverageSamples", std::to_string(dataAverageSamples).c_str()));
@@ -192,6 +200,7 @@ void saveSettings()
 	// Startup
 	ini.SetValue("Startup", "autoStart", std::to_string(autoStart).c_str());
 	ini.SetValue("Startup", "minimizeOnStart", std::to_string(minimizeOnStart).c_str());
+	ini.SetValue("Startup", "languageIndex", std::to_string(languageIndex).c_str());
 	// General
 	ini.SetValue("General", "resChangeDelayMs", std::to_string(resChangeDelayMs).c_str());
 	ini.SetValue("General", "dataAverageSamples", std::to_string(dataAverageSamples).c_str());
@@ -406,8 +415,9 @@ std::string get_executable_path()
 
 int main(int argc, char *argv[])
 {
+	 InitImGuiWithChineseFonts();
 	executable_path = argc > 0 ? std::filesystem::absolute(std::filesystem::path(argv[0])).string() : "";
-
+	auto& lang = LanguageManager::getInstance();
 #pragma region GUI init
 	if (!glfwInit())
 		return 1;
@@ -474,6 +484,7 @@ int main(int argc, char *argv[])
 	// Load settings from ini file
 	if (!loadSettings())
 		saveSettings(); // Restore settings
+	setLanguage(languageIndex);
 
 	// Set auto-start
 	int autoStartResult = handle_setup(autoStart);
@@ -776,62 +787,59 @@ int main(int argc, char *argv[])
 			ImGui::SetWindowSize(ImVec2(mainWindowWidth, mainWindowHeight));
 
 			// Title
-			ImGui::Text("OVR Dynamic Resolution");
+			ImGui::Text("%s", LanguageManager::getInstance().translate("app_title").c_str());
 
 			ImGui::Separator();
 			ImGui::NewLine();
 
+			// 使用 UTF-8 字面量
 			// HMD Hz
-			ImGui::Text("%s", fmt::format("HMD refresh rate: {} hz ({:.2f} ms)", hmdHz, hmdFrametime).c_str());
-
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("hmd_refresh_rate"), hmdHz, hmdFrametime).c_str());
+			// 在渲染代码中使用翻译
 			// Target FPS and frametime
 			if (!vramOnlyMode)
 			{
-				ImGui::Text("%s", fmt::format("Target FPS: {} fps ({:.2f} ms)", targetFps, targetFrametime).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("target_fps"), targetFps, targetFrametime).c_str());
 			}
 			else
 			{
-				ImGui::Text("Target FPS: Disabled");
+				ImGui::Text("%s", LanguageManager::getInstance().translate("target_fps_disabled").c_str());
 			}
-
 			// VRAM target and limit
 			if (nvmlEnabled && nvmlEnabled)
 			{
-				ImGui::Text("%s", fmt::format("VRAM target: {:.2f} GB", vramTarget / 100.0f * vramTotalGB).c_str());
-				ImGui::Text("%s", fmt::format("VRAM limit: {:.2f} GB ", vramLimit / 100.0f * vramTotalGB).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("target_VRAM"), vramTarget / 100.0f * vramTotalGB).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("limit_VRAM"), vramLimit / 100.0f * vramTotalGB).c_str());
 			}
-			else
-			{
-				ImGui::Text("VRAM target: Disabled");
-				ImGui::Text("VRAM limit: Disabled");
+			else{
+				ImGui::Text("%s", LanguageManager::getInstance().translate("target_VRAM_disabled").c_str());
+				ImGui::Text("%s", LanguageManager::getInstance().translate("limit_VRAM_disabled").c_str());
 			}
 
 			ImGui::NewLine();
 
-			// FPS and frametimes
-			ImGui::Text("%s", fmt::format("FPS: {} fps", currentFps).c_str());
-			ImGui::Text("%s", fmt::format("GPU frametime: {:.2f} ms", averageGpuTime).c_str());
-			ImGui::Text("%s", fmt::format("CPU frametime: {:.2f} ms", averageCpuTime).c_str());
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("FPS").c_str(), currentFps).c_str());
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("GPU_frametime").c_str(), averageGpuTime).c_str());
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("CPU_frametime").c_str(), averageCpuTime).c_str());
 
 			// VRAM usage
 			if (nvmlEnabled)
-				ImGui::Text("%s", fmt::format("VRAM usage: {:.2f} GB", vramUsedGB).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramUsedGB).c_str());
 			else
-				ImGui::Text("%s", fmt::format("VRAM usage: Disabled").c_str());
+				ImGui::Text("%s", LanguageManager::getInstance().translate("VRAM_usage_disabled").c_str());
 
 			ImGui::NewLine();
 
 			// Reprojection ratio
-			ImGui::Text("%s", fmt::format("Reprojection ratio: {:.2f}", averageFrameShown - 1).c_str());
-
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("Reprojection_ratio"), averageFrameShown - 1).c_str());
 			// Current resolution
 			if (manualRes)
 			{
-				ImGui::Text("Resolution =");
+				ImGui::Text("%s", LanguageManager::getInstance().translate("Resolution_info_2").c_str());
 			}
 			else
 			{
-				ImGui::Text("%s", fmt::format("Resolution = {}", newRes).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("Resolution_info"), newRes).c_str());
 			}
 
 			// Resolution adjustment status
@@ -850,25 +858,22 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					ImGui::Text("(adjustment paused)");
+					ImGui::Text("%s", lang.translate("Adjustment_paused").c_str());
 				}
 			}
 
 			ImGui::NewLine();
 
 			// Open settings
-			bool settingsPressed = ImGui::Button("Settings", ImVec2(82, 28));
+			bool settingsPressed = ImGui::Button(lang.translate("Settings").c_str(), ImVec2(82, 28));
 			if (settingsPressed)
 				showSettings = true;
 
 			// Resolution pausing
 			ImGui::SameLine();
-			const char *pauseText;
-			if (!manualRes)
-				pauseText = "Manual resolution";
-			else
-				pauseText = "Dynamic resolution";
-			bool pausePressed = ImGui::Button(pauseText, ImVec2(142, 28));
+
+			std::string pauseText = lang.translate(manualRes ? "Dynamic_resolution" : "Manual_resolution");
+			bool pausePressed = ImGui::Button(pauseText.c_str(), ImVec2(142, 28));
 			if (pausePressed)
 			{
 				manualRes = !manualRes;
@@ -880,175 +885,188 @@ int main(int argc, char *argv[])
 		}
 #pragma endregion
 
+
 #pragma region Settings window
-		if (showSettings)
+if (showSettings)
+{
+    // Create the settings window
+    ImGui::Begin(LanguageManager::getInstance().translate("Settings").c_str(), NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+    // Set position and size to fill the viewport
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    ImGui::SetWindowSize(ImVec2(mainWindowWidth, mainWindowHeight));
+
+    // Set the labels' width
+    ImGui::PushItemWidth(96);
+
+    // Title
+    ImGui::Text(LanguageManager::getInstance().translate("Settings").c_str());
+
+    ImGui::Separator();
+    ImGui::NewLine();
+
+    // GUI settings inputs
+    if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("Startup").c_str()))
+    {
+        ImGui::Checkbox(LanguageManager::getInstance().translate("Start_with_SteamVR").c_str(), &autoStart);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_start_with_SteamVR").c_str());
+
+        ImGui::Text(LanguageManager::getInstance().translate("Startup_behavior").c_str());
+        ImGui::RadioButton(LanguageManager::getInstance().translate("Visible").c_str(), &minimizeOnStart, 0);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_visible").c_str());
+        ImGui::RadioButton(LanguageManager::getInstance().translate("Minimized_taskbar").c_str(), &minimizeOnStart, 1);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_minimized_taskbar").c_str());
+        ImGui::RadioButton(LanguageManager::getInstance().translate("Hidden_tray").c_str(), &minimizeOnStart, 2);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_hidden_tray").c_str());
+    }
+
+	if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("General").c_str()))
+	{
+		// 添加语言选择的下拉框
+		static const char* languages[] = { "English", "中文" }; // 可扩展的语言选项
+		static int selectedLanguageIndex = languageIndex; // 初始选择索引，0对应English
+		// 显示下拉框并更新语言索引
+		if (ImGui::Combo(LanguageManager::getInstance().translate("Select_language").c_str(), &selectedLanguageIndex, languages, IM_ARRAYSIZE(languages)))
 		{
-			// Create the settings window
-			ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-			// Set position and size to fill the viewport
-			ImGui::SetWindowPos(ImVec2(0, 0));
-			ImGui::SetWindowSize(ImVec2(mainWindowWidth, mainWindowHeight));
-
-			// Set the labels' width
-			ImGui::PushItemWidth(96);
-
-			// Title
-			ImGui::Text("Settings");
-
-			ImGui::Separator();
-			ImGui::NewLine();
-
-			// GUI settings inputs
-			if (ImGui::CollapsingHeader("Startup"))
-			{
-				ImGui::Checkbox("Start with SteamVR", &autoStart);
-				addTooltip("Automatically launch OVRDR alongside SteamVR.");
-
-				ImGui::Text("Startup behaviour:");
-				ImGui::RadioButton("Visible", &minimizeOnStart, 0);
-				addTooltip("Keep the OVRDR window visible on startup.");
-				ImGui::RadioButton("Minimized (taskbar)", &minimizeOnStart, 1);
-				addTooltip("Minimize the OVRDR window to the taskbar on startup.");
-				ImGui::RadioButton("Hidden (tray)", &minimizeOnStart, 2);
-				addTooltip("Hide the OVRDR window completely on startup. You can still show the window by clicking \"Show\" in the tray icon's context menu.");
-			}
-
-			if (ImGui::CollapsingHeader("General"))
-			{
-				if (ImGui::InputInt("Resolution change delay ms", &resChangeDelayMs, 100))
-					resChangeDelayMs = std::max(resChangeDelayMs, 100);
-				addTooltip("Delay in milliseconds between resolution changes.");
-
-				if (ImGui::InputInt("Data average samples.", &dataAverageSamples, 2))
-				{
-					dataAverageSamples = std::clamp(dataAverageSamples, 1, 128); // Max stored by OpenVR
-					frameTiming = new vr::Compositor_FrameTiming[dataAverageSamples];
-				}
-				addTooltip("Number of frames' frametimes to average out.");
-
-				if (ImGui::InputTextMultiline("Disabled applications", &disabledApps, ImVec2(130, 60)))
-					disabledAppsSet = multilineStringToSet(disabledApps);
-				addTooltip("List of OpenVR application keys that should be ignored for resolution adjustment in the format \'steam.app.APPID\' (e.g. steam.app.620980 for Beat Saber). One per line.");
-				if (ImGui::Button("Disable current application", ImVec2(200, 26)))
-				{
-					std::string appKey = getCurrentApplicationKey();
-					if (!isApplicationDisabled(appKey))
-					{
-						disabledAppsSet.insert(appKey);
-						disabledApps += "\n" + appKey;
-					}
-				}
-				addTooltip("Adds the current application to the list of disable applications.");
-			}
-
-			if (ImGui::CollapsingHeader("Resolution"))
-			{
-				if (ImGui::InputInt("Initial resolution", &initialRes, 5))
-					initialRes = std::clamp(initialRes, 20, 500);
-				addTooltip("The resolution set at startup. Also used when resetting resolution.");
-
-				if (ImGui::InputInt("Minimum resolution", &minRes, 5))
-					minRes = std::clamp(minRes, 20, 500);
-				addTooltip("The minimum resolution OVRDR will set.");
-
-				if (ImGui::InputInt("Maximum resolution", &maxRes, 5))
-					maxRes = std::clamp(maxRes, 20, 500);
-				addTooltip("The maximum resolution OVRDR will set.");
-
-				if (ImGui::TreeNodeEx("Advanced", ImGuiTreeNodeFlags_NoTreePushOnOpen))
-				{
-					if (ImGui::InputInt("Increase threshold", &resIncreaseThreshold, 1))
-						resIncreaseThreshold = std::max(resIncreaseThreshold, 0);
-					addTooltip("Percentage of the target frametime at which to stop increasing resolution.");
-
-					if (ImGui::InputInt("Decrease threshold", &resDecreaseThreshold, 1))
-						resDecreaseThreshold = std::max(resDecreaseThreshold, 0);
-					addTooltip("Percentage of the target frametime at which to start decreasing resolution.");
-
-					ImGui::InputInt("Increase minimum", &resIncreaseMin, 1);
-					addTooltip("Percentages to increase resolution when available.");
-
-					ImGui::InputInt("Decrease minimum", &resDecreaseMin, 1);
-					addTooltip("Percentages to decrease resolution when needed.");
-
-					ImGui::InputInt("Increase scale", &resIncreaseScale, 10);
-					addTooltip("The more frametime headroom and the higher this value is, the more resolution will increase each time.");
-
-					ImGui::InputInt("Decrease scale", &resDecreaseScale, 10);
-					addTooltip("The more frametime excess and the higher this value is, the more resolution will decrease each time.");
-
-					ImGui::InputFloat("Minimum CPU time threshold", &minCpuTimeThreshold, 0.1);
-					addTooltip("Don't increase resolution if the CPU frametime is below this value (useful to prevent resolution increases during loading screens).");
-
-					ImGui::Checkbox("Reset on CPU time threshold", &resetOnThreshold);
-					addTooltip("Reset the resolution to the initial resolution whenever the \"Minimum CPU time threshold\" is met.");
-				}
-			}
-
-			if (ImGui::CollapsingHeader("Reprojection"))
-			{
-				ImGui::Checkbox("Always reproject", &alwaysReproject);
-				addTooltip("Always double the target frametime.");
-
-				ImGui::Checkbox("Prefer reprojection", &preferReprojection);
-				addTooltip("If enabled, double the target frametime as soon as the CPU frametime is over the initial target frametime. Else, only double the target frametime if the CPU frametime is over double the initial target frametime.");
-
-				ImGui::Checkbox("Ignore CPU time", &ignoreCpuTime);
-				addTooltip("Never change the target frametime depending on the CPU frametime (stops both behaviours described in \"Prefer reprojection\" tooltip).");
-			}
-
-			if (ImGui::CollapsingHeader("VRAM"))
-			{
-				ImGui::Checkbox("VRAM monitor enabled", &vramMonitorEnabled);
-				addTooltip("Enable VRAM specific features. If disabled, it is assumed that free VRAM is always available.");
-
-				ImGui::Checkbox("VRAM-only mode", &vramOnlyMode);
-				addTooltip("Always stay at the initial resolution or lower based off available VRAM alone (ignoring frametimes).");
-
-				if (ImGui::InputInt("VRAM target", &vramTarget, 2))
-					vramTarget = std::clamp(vramTarget, 0, 100);
-				addTooltip("Resolution stops increasing once VRAM usage exceeds this percentage.");
-
-				if (ImGui::InputInt("VRAM limit", &vramLimit, 2))
-					vramLimit = std::clamp(vramLimit, 0, 100);
-				addTooltip("Resolution starts descreasing once VRAM usage exceeds this percentage.");
-			}
-
-			ImGui::NewLine();
-
-			// Save settings
-			bool closePressed = ImGui::Button("Close", ImVec2(82, 28));
-			if (closePressed)
-			{
-				showSettings = false;
-			}
-			ImGui::SameLine();
-			pushRedButtonColour();
-			bool revertPressed = ImGui::Button("Revert", ImVec2(82, 28));
-			if (revertPressed)
-			{
-				int oldDataAverageSamples = dataAverageSamples;
-				loadSettings();
-				if (oldDataAverageSamples != dataAverageSamples)
-					frameTiming = new vr::Compositor_FrameTiming[dataAverageSamples];
-			}
-			ImGui::SameLine();
-			pushGreenButtonColour();
-			bool savePressed = ImGui::Button("Save", ImVec2(82, 28));
-			if (savePressed)
-			{
-				saveSettings();
-				if (prevAutoStart != autoStart)
-				{
-					handle_setup(autoStart);
-					prevAutoStart = autoStart;
-				}
-			}
-
-			// Stop creating the settings window
-			ImGui::End();
+			languageIndex = selectedLanguageIndex;
+			// 更新语言代码，根据索引选择语言
+			setLanguage(languageIndex);
 		}
+		addTooltip(LanguageManager::getInstance().translate("Tooltip_select_language").c_str());
+
+		// 其他设置项
+		if (ImGui::InputInt(LanguageManager::getInstance().translate("Resolution_change_delay_ms").c_str(), &resChangeDelayMs, 100))
+			resChangeDelayMs = std::max(resChangeDelayMs, 100);
+		addTooltip(LanguageManager::getInstance().translate("Tooltip_resolution_change_delay_ms").c_str());
+
+		if (ImGui::InputInt(LanguageManager::getInstance().translate("Data_average_samples").c_str(), &dataAverageSamples, 2))
+		{
+			dataAverageSamples = std::clamp(dataAverageSamples, 1, 128); // Max stored by OpenVR
+			frameTiming = new vr::Compositor_FrameTiming[dataAverageSamples];
+		}
+		addTooltip(LanguageManager::getInstance().translate("Tooltip_data_average_samples").c_str());
+
+		if (ImGui::InputTextMultiline(LanguageManager::getInstance().translate("Disable_application").c_str(), &disabledApps, ImVec2(130, 60)))
+			disabledAppsSet = multilineStringToSet(disabledApps);
+		addTooltip(LanguageManager::getInstance().translate("Tooltip_disable_current_application").c_str());
+
+		if (ImGui::Button(LanguageManager::getInstance().translate("Disable_current_application").c_str(), ImVec2(200, 26)))
+		{
+			std::string appKey = getCurrentApplicationKey();
+			if (!isApplicationDisabled(appKey))
+			{
+				disabledAppsSet.insert(appKey);
+				disabledApps += "\n" + appKey;
+			}
+		}
+		addTooltip(LanguageManager::getInstance().translate("Tooltip_disable_current_application").c_str());
+	}
+
+    if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("Resolution").c_str()))
+    {
+        if (ImGui::InputInt(LanguageManager::getInstance().translate("Initial_resolution").c_str(), &initialRes, 5))
+            initialRes = std::clamp(initialRes, 20, 500);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_initial_resolution").c_str());
+
+        if (ImGui::InputInt(LanguageManager::getInstance().translate("Minimum_resolution").c_str(), &minRes, 5))
+            minRes = std::clamp(minRes, 20, 500);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_minimum_resolution").c_str());
+
+        if (ImGui::InputInt(LanguageManager::getInstance().translate("Maximum_resolution").c_str(), &maxRes, 5))
+            maxRes = std::clamp(maxRes, 20, 500);
+        addTooltip(LanguageManager::getInstance().translate("Tooltip_maximum_resolution").c_str());
+
+        if (ImGui::TreeNodeEx(LanguageManager::getInstance().translate("Advanced").c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen))
+        {
+            if (ImGui::InputInt(LanguageManager::getInstance().translate("Increase_threshold").c_str(), &resIncreaseThreshold, 1))
+                resIncreaseThreshold = std::max(resIncreaseThreshold, 0);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_increase_threshold").c_str());
+
+            if (ImGui::InputInt(LanguageManager::getInstance().translate("Decrease_threshold").c_str(), &resDecreaseThreshold, 1))
+                resDecreaseThreshold = std::max(resDecreaseThreshold, 0);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_decrease_threshold").c_str());
+
+            ImGui::InputInt(LanguageManager::getInstance().translate("Increase_minimum").c_str(), &resIncreaseMin, 1);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_increase_minimum").c_str());
+
+            ImGui::InputInt(LanguageManager::getInstance().translate("Decrease_minimum").c_str(), &resDecreaseMin, 1);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_decrease_minimum").c_str());
+
+            ImGui::InputInt(LanguageManager::getInstance().translate("Increase_scale").c_str(), &resIncreaseScale, 10);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_increase_scale").c_str());
+
+            ImGui::InputInt(LanguageManager::getInstance().translate("Decrease_scale").c_str(), &resDecreaseScale, 10);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_decrease_scale").c_str());
+
+            ImGui::InputFloat(LanguageManager::getInstance().translate("Minimum_CPU_time_threshold").c_str(), &minCpuTimeThreshold, 0.1);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_minimum_CPU_time_threshold").c_str());
+
+            ImGui::Checkbox(LanguageManager::getInstance().translate("Reset_on_CPU_time_threshold").c_str(), &resetOnThreshold);
+            addTooltip(LanguageManager::getInstance().translate("Tooltip_reset_on_CPU_time_threshold").c_str());
+        }
+    }
+		if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("header_reprojection").c_str()))
+		{
+			ImGui::Checkbox(LanguageManager::getInstance().translate("Always_reproject").c_str(), &alwaysReproject);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_always_reproject").c_str());
+
+			ImGui::Checkbox(LanguageManager::getInstance().translate("Prefer_reprojection").c_str(), &preferReprojection);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_prefer_reprojection").c_str());
+
+			ImGui::Checkbox(LanguageManager::getInstance().translate("Ignore_CPU_time").c_str(), &ignoreCpuTime);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_ignore_CPU_time").c_str());
+		}
+
+		if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("VRAM").c_str()))
+		{
+			ImGui::Checkbox(LanguageManager::getInstance().translate("VRAM_monitor_enabled").c_str(), &vramMonitorEnabled);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_vram_monitor").c_str());
+
+			ImGui::Checkbox(LanguageManager::getInstance().translate("VRAM-only_mode").c_str(), &vramOnlyMode);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_VRAM-only_mode").c_str());
+
+			if (ImGui::InputInt(LanguageManager::getInstance().translate("VRAM_target").c_str(), &vramTarget, 2))
+				vramTarget = std::clamp(vramTarget, 0, 100);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_vram_target").c_str());
+
+			if (ImGui::InputInt(LanguageManager::getInstance().translate("VRAM_limit").c_str(), &vramLimit, 2))
+				vramLimit = std::clamp(vramLimit, 0, 100);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_vram_limit").c_str());
+		}
+
+
+    // Buttons
+    bool closePressed = ImGui::Button(LanguageManager::getInstance().translate("Close").c_str(), ImVec2(82, 28));
+    if (closePressed)
+    {
+        showSettings = false;
+    }
+    ImGui::SameLine();
+    pushRedButtonColour();
+    bool revertPressed = ImGui::Button(LanguageManager::getInstance().translate("Revert").c_str(), ImVec2(82, 28));
+    if (revertPressed)
+    {
+        int oldDataAverageSamples = dataAverageSamples;
+        loadSettings();
+        if (oldDataAverageSamples != dataAverageSamples)
+            frameTiming = new vr::Compositor_FrameTiming[dataAverageSamples];
+    }
+    ImGui::SameLine();
+    pushGreenButtonColour();
+    bool savePressed = ImGui::Button(LanguageManager::getInstance().translate("Save").c_str(), ImVec2(82, 28));
+    if (savePressed)
+    {
+        saveSettings();
+        if (prevAutoStart != autoStart)
+        {
+            handle_setup(autoStart);
+            prevAutoStart = autoStart;
+        }
+    }
+
+    // Stop creating the settings window
+    ImGui::End();
+}
 #pragma endregion
 
 		// Rendering
