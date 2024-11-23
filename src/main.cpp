@@ -923,7 +923,7 @@ if (showSettings)
 	if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("General").c_str()))
 	{
 		// 添加语言选择的下拉框
-		static const char* languages[] = { "English", "中文" }; // 可扩展的语言选项
+		static const char* languages[] = { "English", "中文", "日本語"}; // 可扩展的语言选项
 		static int selectedLanguageIndex = languageIndex; // 初始选择索引，0对应English
 		// 显示下拉框并更新语言索引
 		if (ImGui::Combo(LanguageManager::getInstance().translate("Select_language").c_str(), &selectedLanguageIndex, languages, IM_ARRAYSIZE(languages)))

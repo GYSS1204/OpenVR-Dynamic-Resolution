@@ -6,7 +6,8 @@ class LanguageManager {
 public:
     enum Language {
         ENGLISH,
-        SIMPLIFIED_CHINESE
+        SIMPLIFIED_CHINESE,
+        JAPANESE
     };
 
     static LanguageManager& getInstance() {
