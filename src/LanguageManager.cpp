@@ -203,26 +203,6 @@ void LanguageManager::initializeTranslations() {
             {SIMPLIFIED_CHINESE, "要平均的帧数。"},
             {JAPANESE, "平均するフレームのフレームタイム数。"}
         }},
-        {"VRAM_monitor_enabled", {
-            {ENGLISH, "VRAM monitor enabled"},
-            {SIMPLIFIED_CHINESE, "启用显存监控"},
-            {JAPANESE, "VRAMモニターが有効"}
-        }},
-        {"Tooltip_vram_monitor", {
-            {ENGLISH, "Enable VRAM specific features. If disabled, it is assumed that free VRAM is always available."},
-            {SIMPLIFIED_CHINESE, "启用显存相关功能。如果禁用，假定显存总是可用。"},
-            {JAPANESE, "VRAM固有の機能を有効にします。無効にした場合、常に空きVRAMが利用可能であると仮定します。"}
-        }},
-        {"Tooltip_vram_limit", {
-            {ENGLISH, "Resolution starts decreasing once VRAM usage exceeds this percentage."},
-            {SIMPLIFIED_CHINESE, "当显存使用率超过此百分比时，分辨率开始下降。"},
-            {JAPANESE, "VRAM使用量がこの割合を超えると、解像度が低下し始めます。"}
-        }},
-        {"Tooltip_vram_target", {
-            {ENGLISH, "Resolution stops increasing once VRAM usage exceeds this percentage."},
-            {SIMPLIFIED_CHINESE, "当显存使用率超过此百分比时，分辨率停止增加。"},
-            {JAPANESE, "VRAM使用量がこの割合を超えると、解像度の増加が停止します。"}
-        }},
         {"Disable_current_application", {
             {ENGLISH, "Disable current application"},
             {SIMPLIFIED_CHINESE, "禁用当前应用程序"},
@@ -274,24 +254,24 @@ void LanguageManager::initializeTranslations() {
             {JAPANESE, "詳細設定"}
         }},
         {"Increase_threshold", {
-            {ENGLISH, "Increase threshold"},
-            {SIMPLIFIED_CHINESE, "增加阈值"},
-            {JAPANESE, "増加閾値"}
+            {ENGLISH, "Increase threshold(fps)"},
+            {SIMPLIFIED_CHINESE, "增加阈值(fps)"},
+            {JAPANESE, "増加閾値(fps)"}
         }},
         {"Tooltip_increase_threshold", {
-            {ENGLISH, "Percentage of the target frametime at which to stop increasing resolution."},
-            {SIMPLIFIED_CHINESE, "目标帧时间的百分比，达到该值时停止增加分辨率。"},
-            {JAPANESE, "解像度の増加を停止するターゲットフレームタイムの割合。"}
+            {ENGLISH, "When the frame rate is greater than or equal to this value, the resolution starts to increase."},
+            {SIMPLIFIED_CHINESE, "当帧率大于等于该值时开始增加分辨率。"},
+            {JAPANESE, "フレーム レートがこの値以上になったら、解像度の増加を開始します。"}
         }},
         {"Decrease_threshold", {
-            {ENGLISH, "Decrease threshold"},
-            {SIMPLIFIED_CHINESE, "减少阈值"},
-            {JAPANESE, "減少閾値"}
+            {ENGLISH, "Decrease threshold(fps)"},
+            {SIMPLIFIED_CHINESE, "减少阈值(fps)"},
+            {JAPANESE, "減少閾値(fps)"}
         }},
         {"Tooltip_decrease_threshold", {
-            {ENGLISH, "Percentage of the target frametime at which to start decreasing resolution."},
-            {SIMPLIFIED_CHINESE, "目标帧时间的百分比，达到该值时开始减少分辨率。"},
-            {JAPANESE, "解像度の減少を開始するターゲットフレームタイムの割合。"}
+            {ENGLISH, "When the frame rate drops below this value, the resolution starts to decrease."},
+            {SIMPLIFIED_CHINESE, "当帧率小于该值时开始降低分辨率。"},
+            {JAPANESE, "フレーム レートがこの値より低い場合は、解像度の低下を開始します。"}
         }},
         {"Increase_minimum", {
             {ENGLISH, "Increase minimum"},
@@ -300,7 +280,7 @@ void LanguageManager::initializeTranslations() {
         }},
         {"Tooltip_increase_minimum", {
             {ENGLISH, "Percentages to increase resolution when available."},
-            {SIMPLIFIED_CHINESE, "有余量时增加分辨率的百分比。"},
+            {SIMPLIFIED_CHINESE, "每次增加分辨率的百分比。"},
             {JAPANESE, "利用可能なときに解像度を増加させる割合。"}
         }},
         {"Decrease_minimum", {
@@ -310,7 +290,7 @@ void LanguageManager::initializeTranslations() {
         }},
         {"Tooltip_decrease_minimum", {
             {ENGLISH, "Percentages to decrease resolution when needed."},
-            {SIMPLIFIED_CHINESE, "需要时减少分辨率的百分比。"},
+            {SIMPLIFIED_CHINESE, "每次减少分辨率的百分比。"},
             {JAPANESE, "必要に応じて解像度を減少させる割合。"}
         }},
         {"Increase_scale", {
@@ -463,6 +443,43 @@ void LanguageManager::initializeTranslations() {
             {SIMPLIFIED_CHINESE, "当显存使用率超过此百分比时，分辨率停止增加。"},
             {JAPANESE, "VRAMの使用率がこのパーセンテージを超えると、解像度の増加が停止します。"}
         }},
+
+        {"GPU_usage_b", {
+            {ENGLISH, "GPU usage"},
+            {SIMPLIFIED_CHINESE, "GPU使用率"},
+            {JAPANESE, "GPUの使用率"}
+        }},
+        {"GPU_usage_target", {
+            {ENGLISH, "GPU usage target"},
+            {SIMPLIFIED_CHINESE, "目标GPU使用率"},
+            {JAPANESE, "ターゲットの GPU 使用率"}
+        }},
+        {"GPU_usage_limit", {
+            {ENGLISH, "GPU usage limit"},
+            {SIMPLIFIED_CHINESE, "限制GPU使用率"},
+            {JAPANESE, "GPUの使用量を制限する"}
+        }},
+        {"GPU_usage_enabled", {
+            {ENGLISH, "GPU usage enabled"},
+            {SIMPLIFIED_CHINESE, "启用GPU使用率"},
+            {JAPANESE, "GPUの使用を有効にする"}
+        }},
+        {"Tooltip_GPU_usage_enabled", {
+            {ENGLISH, "Enable GPU usage related features."},
+            {SIMPLIFIED_CHINESE, "启用GPU使用率相关功能"},
+            {JAPANESE, "GPU 使用率関連の機能を有効にする"}
+        }},
+        {"Tooltip_GPU_usage_limit", {
+            {ENGLISH, "When GPU usage exceeds this percentage, the resolution stops increasing."},
+            {SIMPLIFIED_CHINESE, "当GPU使用率超过此百分比时，分辨率停止增加"},
+            {JAPANESE, "GPU 使用率がこのパーセンテージを超えると、解像度の増加が停止します"}
+        }},
+        {"Tooltip_GPU_usage_target", {
+            {ENGLISH, "When GPU usage falls below this percentage, the resolution stops decreasing."},
+            {SIMPLIFIED_CHINESE, "当GPU使用率低于此百分比时，分辨率停止下降"},
+            {JAPANESE, "GPU 使用率がこのパーセンテージを下回ると、解像度の低下が停止します"}
+        }},
+
 
         
         // Add more translations here

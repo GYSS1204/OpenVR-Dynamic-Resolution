@@ -65,13 +65,14 @@ static constexpr const std::chrono::milliseconds refreshIntervalBackground = 167
 static constexpr const std::chrono::milliseconds refreshIntervalFocused = 33ms;		// 30fps
 
 static constexpr const int mainWindowWidth = 350;
-static constexpr const int mainWindowHeight = 500;
+static constexpr const int mainWindowHeight = 400;
 
 
 
 GLFWwindow *glfwWindow;
 
 bool trayQuit = false;
+bool settingFlag = false;
 
 #pragma region Config
 #pragma region Default settings
@@ -90,6 +91,11 @@ int minRes = 70;
 int maxRes = 250;
 int resIncreaseThreshold = 80;
 int resDecreaseThreshold = 88;
+int resIncreaseThresholdFPS = 60;
+int resDecreaseThresholdFPS = 50;
+int GPUusageTarget = 95;
+int GPUusageLimit = 100;
+bool GPUusageEnabled = true;
 int resIncreaseMin = 3;
 int resDecreaseMin = 5;
 int resIncreaseScale = 140;
@@ -111,6 +117,8 @@ float vramUsedGB = 0;
 float vramUsed = 0; // Assume we always have free VRAM by default
 int gpuUsage = 0;
 #pragma endregion
+
+
 
 
 
@@ -175,6 +183,8 @@ bool loadSettings()
 		maxRes = std::stoi(ini.GetValue("Resolution", "maxRes", std::to_string(maxRes).c_str()));
 		resIncreaseThreshold = std::stoi(ini.GetValue("Resolution", "resIncreaseThreshold", std::to_string(resIncreaseThreshold).c_str()));
 		resDecreaseThreshold = std::stoi(ini.GetValue("Resolution", "resDecreaseThreshold", std::to_string(resDecreaseThreshold).c_str()));
+		resIncreaseThresholdFPS = std::stoi(ini.GetValue("Resolution", "resIncreaseThresholdFPS", std::to_string(resIncreaseThresholdFPS).c_str()));
+		resDecreaseThresholdFPS = std::stoi(ini.GetValue("Resolution", "resDecreaseThresholdFPS", std::to_string(resDecreaseThresholdFPS).c_str()));
 		resIncreaseMin = std::stoi(ini.GetValue("Resolution", "resIncreaseMin", std::to_string(resIncreaseMin).c_str()));
 		resDecreaseMin = std::stoi(ini.GetValue("Resolution", "resDecreaseMin", std::to_string(resDecreaseMin).c_str()));
 		resIncreaseScale = std::stoi(ini.GetValue("Resolution", "resIncreaseScale", std::to_string(resIncreaseScale).c_str()));
@@ -190,6 +200,12 @@ bool loadSettings()
 		vramOnlyMode = std::stoi(ini.GetValue("VRAM", "vramOnlyMode", std::to_string(vramOnlyMode).c_str()));
 		vramTarget = std::stoi(ini.GetValue("VRAM", "vramTarget", std::to_string(vramTarget).c_str()));
 		vramLimit = std::stoi(ini.GetValue("VRAM", "vramLimit", std::to_string(vramLimit).c_str()));
+		// GPU usage percentage
+		GPUusageEnabled = std::stoi(ini.GetValue("GPUusage", "GPUusageEnabled", std::to_string(GPUusageEnabled).c_str()));
+		GPUusageLimit = std::stoi(ini.GetValue("GPUusage", "GPUusageLimit", std::to_string(GPUusageLimit).c_str()));
+		GPUusageTarget = std::stoi(ini.GetValue("GPUusage", "GPUusageTarget", std::to_string(GPUusageTarget).c_str()));
+
+
 		return true;
 	}
 	catch (...)
@@ -217,6 +233,8 @@ void saveSettings()
 	ini.SetValue("Resolution", "maxRes", std::to_string(maxRes).c_str());
 	ini.SetValue("Resolution", "resIncreaseThreshold", std::to_string(resIncreaseThreshold).c_str());
 	ini.SetValue("Resolution", "resDecreaseThreshold", std::to_string(resDecreaseThreshold).c_str());
+	ini.SetValue("Resolution", "resIncreaseThresholdFPS", std::to_string(resIncreaseThresholdFPS).c_str());
+	ini.SetValue("Resolution", "resDecreaseThresholdFPS", std::to_string(resDecreaseThresholdFPS).c_str());
 	ini.SetValue("Resolution", "resIncreaseMin", std::to_string(resIncreaseMin).c_str());
 	ini.SetValue("Resolution", "resDecreaseMin", std::to_string(resDecreaseMin).c_str());
 	ini.SetValue("Resolution", "resIncreaseScale", std::to_string(resIncreaseScale).c_str());
@@ -232,6 +250,10 @@ void saveSettings()
 	ini.SetValue("VRAM", "vramOnlyMode", std::to_string(vramOnlyMode).c_str());
 	ini.SetValue("VRAM", "vramTarget", std::to_string(vramTarget).c_str());
 	ini.SetValue("VRAM", "vramLimit", std::to_string(vramLimit).c_str());
+	// GPU usage percentage
+	ini.SetValue("GPUusage", "GPUusageEnabled", std::to_string(GPUusageEnabled).c_str());
+	ini.SetValue("GPUusage", "GPUusageLimit", std::to_string(GPUusageLimit).c_str());
+	ini.SetValue("GPUusage", "GPUusageTarget", std::to_string(GPUusageTarget).c_str());
 
 	// Save changes to disk
 	ini.SaveFile("settings.ini");
@@ -396,7 +418,7 @@ void OpenConsole()
 
 int main(int argc, char *argv[])
 {
-	OpenConsole();
+	//OpenConsole();
 	 InitImGuiWithChineseFonts();
 	executable_path = argc > 0 ? std::filesystem::absolute(std::filesystem::path(argv[0])).string() : "";
 	auto& lang = LanguageManager::getInstance();
@@ -464,8 +486,13 @@ int main(int argc, char *argv[])
 #pragma endregion
 
 	// Load settings from ini file
-	if (!loadSettings())
+	if (!loadSettings()){
 		saveSettings(); // Restore settings
+	}
+	else{
+		settingFlag = true;
+	}
+		
 	setLanguage(languageIndex);
 
 	// Set auto-start
@@ -538,7 +565,9 @@ int main(int argc, char *argv[])
 	// GUI variables
 	bool showSettings = false;
 	bool prevAutoStart = autoStart;
-
+				vr::Compositor_CumulativeStats stats = {};
+			uint32_t previousFramePresents = 0;
+			vr::IVRCompositor* vrCompositor = vr::VRCompositor();
 	// event loop
 	while (!glfwWindowShouldClose(glfwWindow) && !openvrQuit && !trayQuit)
 	{
@@ -548,7 +577,7 @@ int main(int argc, char *argv[])
 		// Doesn't run every loop
 		if (currentTime - resChangeDelayMs > lastChangeTime)
 		{
-			lastChangeTime = currentTime;
+			//lastChangeTime = currentTime;
 
 #pragma region Getting data
 			// Fetch resolution and target fps
@@ -558,6 +587,12 @@ int main(int argc, char *argv[])
 			targetFrametime = 1000.0f / targetFps;
 			hmdHz = targetFps;
 			hmdFrametime = targetFrametime;
+			if(!settingFlag){
+				resIncreaseThresholdFPS = hmdHz;
+				resDecreaseThresholdFPS = (int)(hmdHz * 0.5);
+				saveSettings();
+				settingFlag = true;
+			}
 
 			// Define totals
 			float totalGpuTime = 0;
@@ -592,10 +627,21 @@ int main(int argc, char *argv[])
 			averageGpuTime = totalGpuTime / dataAverageSamples;
 			averageCpuTime = totalCpuTime / dataAverageSamples;
 			averageFrameShown = (float)frameShownTotal / (float)dataAverageSamples;
-
+			long currentTime = getCurrentTimeMillis();
+			vrCompositor->GetCumulativeStats(&stats, sizeof(stats));
+			
+			// 实际帧率计算
+			uint32_t currentFramePresents = stats.m_nNumFramePresents;
+			uint32_t frameDelta = currentFramePresents - previousFramePresents;
+			double actualFPS = frameDelta * 1000 / (currentTime - lastChangeTime); 
+			lastChangeTime = currentTime;
+			// 输出结果
+			//std::cout << "Actual FPS: " << actualFPS << std::endl;
+			previousFramePresents = currentFramePresents;
 			// Estimated current FPS
-			currentFps = targetFps / averageFrameShown;
-
+			currentFps = actualFPS;
+			//currentFps = targetFps / averageFrameShown;
+			//printf("averageFrameShown %f\n", averageFrameShown);
 			// Double the target frametime if the user wants to,
 			// or if CPU Frametime is double the target frametime,
 			// or if preferReprojection is true and CPU Frametime is greated than targetFrametime.
@@ -621,17 +667,17 @@ int main(int argc, char *argv[])
 				if ((averageCpuTime > minCpuTimeThreshold || vramOnlyMode))
 				{
 					// Frametime
-					if (averageGpuTime < targetFrametime * (resIncreaseThreshold / 100.0f) && vramUsed < vramTarget / 100.0f && !vramOnlyMode)
+					if (currentFps >= resIncreaseThresholdFPS && vramUsed < vramTarget / 100.0f && !vramOnlyMode && (gpuUsage < GPUusageLimit && GPUusageEnabled))
 					{
 						// Increase resolution
-						newRes += (((targetFrametime * (resIncreaseThreshold / 100.0f)) - averageGpuTime) *
+						newRes += (((1000.f / resIncreaseThresholdFPS) - averageGpuTime) *
 								   (resIncreaseScale / 100.0f)) +
 								  resIncreaseMin;
 					}
-					else if (averageGpuTime > targetFrametime * (resDecreaseThreshold / 100.0f) && !vramOnlyMode)
+					else if (currentFps < resDecreaseThresholdFPS && !vramOnlyMode && (gpuUsage > GPUusageTarget && GPUusageEnabled))
 					{
 						// Decrease resolution
-						newRes -= ((averageGpuTime - (targetFrametime * (resDecreaseThreshold / 100.0f))) *
+						newRes -= ((averageGpuTime - (1000.f / resDecreaseThresholdFPS)) *
 								   (resDecreaseScale / 100.0f)) +
 								  resDecreaseMin;
 					}
@@ -888,12 +934,12 @@ if (showSettings)
 
         if (ImGui::TreeNodeEx(LanguageManager::getInstance().translate("Advanced").c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen))
         {
-            if (ImGui::InputInt(LanguageManager::getInstance().translate("Increase_threshold").c_str(), &resIncreaseThreshold, 1))
-                resIncreaseThreshold = std::max(resIncreaseThreshold, 0);
+            if (ImGui::InputInt(LanguageManager::getInstance().translate("Increase_threshold").c_str(), &resIncreaseThresholdFPS, 1))
+                resIncreaseThresholdFPS = std::clamp(resIncreaseThresholdFPS, std::max(resDecreaseThresholdFPS, 10), hmdHz);
             addTooltip(LanguageManager::getInstance().translate("Tooltip_increase_threshold").c_str());
 
-            if (ImGui::InputInt(LanguageManager::getInstance().translate("Decrease_threshold").c_str(), &resDecreaseThreshold, 1))
-                resDecreaseThreshold = std::max(resDecreaseThreshold, 0);
+            if (ImGui::InputInt(LanguageManager::getInstance().translate("Decrease_threshold").c_str(), &resDecreaseThresholdFPS, 1))
+                resDecreaseThresholdFPS = std::clamp(resDecreaseThresholdFPS, 10, std::min(resIncreaseThresholdFPS, hmdHz));
             addTooltip(LanguageManager::getInstance().translate("Tooltip_decrease_threshold").c_str());
 
             ImGui::InputInt(LanguageManager::getInstance().translate("Increase_minimum").c_str(), &resIncreaseMin, 1);
@@ -942,6 +988,19 @@ if (showSettings)
 			if (ImGui::InputInt(LanguageManager::getInstance().translate("VRAM_limit").c_str(), &vramLimit, 2))
 				vramLimit = std::clamp(vramLimit, 0, 100);
 			addTooltip(LanguageManager::getInstance().translate("Tooltip_vram_limit").c_str());
+		}
+		if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("GPU_usage_b").c_str()))
+		{
+			ImGui::Checkbox(LanguageManager::getInstance().translate("GPU_usage_enabled").c_str(), &GPUusageEnabled);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_GPU_usage_enabled").c_str());
+
+			if (ImGui::InputInt(LanguageManager::getInstance().translate("GPU_usage_target").c_str(), &GPUusageTarget, 2))
+				GPUusageTarget = std::clamp(GPUusageTarget, 10, 100);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_GPU_usage_target").c_str());
+
+			if (ImGui::InputInt(LanguageManager::getInstance().translate("GPU_usage_limit").c_str(), &GPUusageLimit, 2))
+				GPUusageLimit = std::clamp(GPUusageLimit, 10, 100);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_GPU_usage_limit").c_str());
 		}
 
 

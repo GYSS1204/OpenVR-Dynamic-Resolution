@@ -364,7 +364,7 @@ int64_t GetTimeStamp(IADLXGPUMetricsPtr gpuMetrics)
     ADLX_RESULT res = gpuMetrics->TimeStamp(&timeStamp);
     if (ADLX_SUCCEEDED(res))
     {
-        std::cout << "The GPU timp stamp is: " << timeStamp << "ms" << std::endl;
+        //std::cout << "The GPU timp stamp is: " << timeStamp << "ms" << std::endl;
         return timeStamp;
     }
     return 0;
@@ -378,15 +378,14 @@ double ShowGPUUsage(IADLXGPUMetricsSupportPtr gpuMetricsSupport, IADLXGPUMetrics
     ADLX_RESULT res = gpuMetricsSupport->IsSupportedGPUUsage(&supported);
     if (ADLX_SUCCEEDED(res))
     {
-        std::cout << "GPU usage support status: " << supported << std::endl;
+        //std::cout << "GPU usage support status: " << supported << std::endl;
         if (supported)
         {
             adlx_double usage = 0;
             res = gpuMetrics->GPUUsage(&usage);
             if (ADLX_SUCCEEDED(res))
             {
-                std::cout << "The GPU usage is: " << usage << "%" << std::endl;
-                printf("usage: %f\n", usage);
+                //std::cout << "The GPU usage is: " << usage << "%" << std::endl;
                 return usage;
 
             }
@@ -404,13 +403,13 @@ int ShowGPUVRAM(IADLXGPUMetricsSupportPtr gpuMetricsSupport, IADLXGPUMetricsPtr 
     ADLX_RESULT res = gpuMetricsSupport->IsSupportedGPUVRAM(&supported);
     if (ADLX_SUCCEEDED(res))
     {
-        std::cout << "GPU VRAM support status: " << supported << std::endl;
+        //std::cout << "GPU VRAM support status: " << supported << std::endl;
         if (supported)
         {
             adlx_int VRAM = 0;
             res = gpuMetrics->GPUVRAM(&VRAM);
             if (ADLX_SUCCEEDED(res)){
-                std::cout << "The GPU VRAM is: " << VRAM << "MB" << std::endl;
+                //std::cout << "The GPU VRAM is: " << VRAM << "MB" << std::endl;
                 return VRAM;
             }
                 
@@ -429,13 +428,13 @@ double ShowGPUTemperature(IADLXGPUMetricsSupportPtr gpuMetricsSupport, IADLXGPUM
     ADLX_RESULT res = gpuMetricsSupport->IsSupportedGPUTemperature(&supported);
     if (ADLX_SUCCEEDED(res))
     {
-        std::cout << "GPU temperature support status: " << supported << std::endl;
+        //std::cout << "GPU temperature support status: " << supported << std::endl;
         if (supported)
         {
             adlx_double temperature = 0;
             res = gpuMetrics->GPUTemperature(&temperature);
             if (ADLX_SUCCEEDED(res))
-                std::cout << "The GPU temperature is: " << temperature << g_degree <<"C" << std::endl;
+                //std::cout << "The GPU temperature is: " << temperature << g_degree <<"C" << std::endl;
                 return temperature;
         }
     }
@@ -451,14 +450,14 @@ double ShowGPUHotspotTemperature(IADLXGPUMetricsSupportPtr gpuMetricsSupport, IA
     ADLX_RESULT res = gpuMetricsSupport->IsSupportedGPUHotspotTemperature(&supported);
     if (ADLX_SUCCEEDED(res))
     {
-        std::cout << "GPU hotspot temperature support status: " << supported << std::endl;
+        //std::cout << "GPU hotspot temperature support status: " << supported << std::endl;
         if (supported)
         {
             adlx_double hotspotTemperature = 0;
             res = gpuMetrics->GPUHotspotTemperature(&hotspotTemperature);
             if (ADLX_SUCCEEDED(res))
             {                
-                std::cout << "The GPU hotspot temperature is: " << hotspotTemperature << g_degree <<"C" << std::endl;
+                //std::cout << "The GPU hotspot temperature is: " << hotspotTemperature << g_degree <<"C" << std::endl;
                 return hotspotTemperature;
             }
         }
@@ -475,14 +474,14 @@ double ShowGPUTotalBoardPower(IADLXGPUMetricsSupportPtr gpuMetricsSupport, IADLX
     ADLX_RESULT res = gpuMetricsSupport->IsSupportedGPUTotalBoardPower(&supported);
     if (ADLX_SUCCEEDED(res))
     {
-        std::cout << "GPU total board power support status: " << supported << std::endl;
+        //std::cout << "GPU total board power support status: " << supported << std::endl;
         if (supported)
         {
             adlx_double power = 0;
             res = gpuMetrics->GPUTotalBoardPower(&power);
             if (ADLX_SUCCEEDED(res))
             {
-                std::cout << "The GPU total board power is: " << power << "W" << std::endl;
+                //std::cout << "The GPU total board power is: " << power << "W" << std::endl;
                 return power;
 
             }
@@ -505,7 +504,7 @@ void ShowGPUMetricsRange(IADLXPerformanceMonitoringServicesPtr perfMonitoringSer
         res = gpuMetricsSupport->GetGPUVRAMRange(&minValue, &maxValue);
         if (ADLX_SUCCEEDED(res))
         {
-            std::cout << "The GPU VRAM range between " << minValue << "MB and " << maxValue << "MB" << std::endl;
+            //std::cout << "The GPU VRAM range between " << minValue << "MB and " << maxValue << "MB" << std::endl;
             vramTotalGB = (float)maxValue / 1024;
         }
         else if (res == ADLX_NOT_SUPPORTED)
@@ -536,7 +535,7 @@ void ShowCurrentGPUMetrics(IADLXPerformanceMonitoringServicesPtr perfMonitoringS
     // Display timestamp and GPU metrics
     if (ADLX_SUCCEEDED(res1) && ADLX_SUCCEEDED(res2))
     {
-        std::cout << "The current GPU metrics: " << std::endl;
+        //std::cout << "The current GPU metrics: " << std::endl;
         //std::cout << std::boolalpha;  // Display boolean variable as true or false
         GetTimeStamp(gpuMetrics);
         gpuUsage = (int)ShowGPUUsage(gpuMetricsSupport, gpuMetrics);
