@@ -20,6 +20,8 @@
 #include <dlfcn.h>
 #endif
 
+#include "get_info.h"
+
 // Loading and saving .ini configuration file
 #include "SimpleIni.h"
 #include "setup.hpp"
@@ -33,7 +35,6 @@
 
 // Loading png
 #include "lodepng.h"
-#include "../include/adl_sdk.h"
 
 // Tray icon
 #include "tray.h"
@@ -66,7 +67,7 @@ static constexpr const std::chrono::milliseconds refreshIntervalFocused = 33ms;	
 static constexpr const int mainWindowWidth = 350;
 static constexpr const int mainWindowHeight = 500;
 
-static constexpr const float bitsToGB = 1073741824;
+
 
 GLFWwindow *glfwWindow;
 
@@ -104,6 +105,11 @@ int vramTarget = 80;
 int vramLimit = 90;
 bool vramMonitorEnabled = true;
 bool vramOnlyMode = false;
+float vramTotalGB = 0;
+bool GPUEnabled = true;
+float vramUsedGB = 0;
+float vramUsed = 0; // Assume we always have free VRAM by default
+int gpuUsage = 0;
 #pragma endregion
 
 
@@ -232,66 +238,12 @@ void saveSettings()
 }
 #pragma endregion
 
-#pragma region NVML
-bool nvmlEnabled = true;
-
-typedef enum nvmlReturn_enum
-{
-	NVML_SUCCESS = 0,					// The operation was successful.
-	NVML_ERROR_UNINITIALIZED = 1,		// NVML was not first initialized with nvmlInit.
-	NVML_ERROR_INVALID_ARGUMENT = 2,	// A supplied argument is invalid.
-	NVML_ERROR_NOT_SUPPORTED = 3,		// The requested operation is not available on target device.
-	NVML_ERROR_NO_PERMISSION = 4,		// The currrent user does not have permission for operation.
-	NVML_ERROR_ALREADY_INITIALIZED = 5, // NVML has already been initialized.
-	NVML_ERROR_NOT_FOUND = 6,			// A query to find an object was unccessful.
-	NVML_ERROR_UNKNOWN = 7,				// An internal driver error occurred.
-} nvmlReturn_t;
-typedef nvmlReturn_t (*nvmlInit_t)();
-typedef nvmlReturn_t (*nvmlShutdown_t)();
-typedef struct
-{
-	unsigned long long total;
-	unsigned long long free;
-	unsigned long long used;
-} nvmlMemory_t;
-typedef nvmlReturn_t (*nvmlDevice_t)();
-typedef nvmlReturn_t (*nvmlDeviceGetHandleByIndex_t)(unsigned int, nvmlDevice_t *);
-typedef nvmlReturn_t (*nvmlDeviceGetMemoryInfo_t)(nvmlDevice_t, nvmlMemory_t *);
-#ifdef _WIN32
-typedef HMODULE(nvmlLib);
-#else
-typedef void *(nvmlLib);
-#endif
-#pragma endregion
-
 long getCurrentTimeMillis()
 {
 	auto since_epoch = std::chrono::system_clock::now().time_since_epoch();
 	auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(since_epoch);
 	return millis.count();
 }
-
-void pushGrayButtonColour()
-{
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12, 0.12, 0.12, 12));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25, 0.25, 0.25, 1));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17, 0.17, 0.17, 1));
-}
-
-void pushRedButtonColour()
-{
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.62, 0.12, 0.12, 12));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.73, 0.25, 0.25, 1));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.68, 0.17, 0.17, 1));
-}
-
-void pushGreenButtonColour()
-{
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12, 0.62, 0.12, 12));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25, 0.73, 0.25, 1));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17, 0.68, 0.17, 1));
-}
-
 /**
  * Returns the current VR application key (steam.app.000000)
  * or an empty string if no app is running.
@@ -324,6 +276,27 @@ bool shouldAdjustResolution(std::string appKey, bool manualRes, float cpuTime)
 	bool isCurrentAppDisabled = isApplicationDisabled(appKey);
 	// Only adjust resolution if not in dashboard, in a supported application. user didn't pause res and cpu time isn't below threshold
 	return !inDashboard && !isCurrentAppDisabled && !manualRes && !(resetOnThreshold && cpuTime < minCpuTimeThreshold);
+}
+
+void pushGrayButtonColour()
+{
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12, 0.12, 0.12, 12));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25, 0.25, 0.25, 1));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17, 0.17, 0.17, 1));
+}
+
+void pushRedButtonColour()
+{
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.62, 0.12, 0.12, 12));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.73, 0.25, 0.25, 1));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.68, 0.17, 0.17, 1));
+}
+
+void pushGreenButtonColour()
+{
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12, 0.62, 0.12, 12));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25, 0.73, 0.25, 1));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17, 0.68, 0.17, 1));
 }
 
 void printLine(std::string text, long duration)
@@ -363,27 +336,9 @@ void printLine(std::string text, long duration)
 	}
 }
 
-void cleanup(nvmlLib nvmlLibrary)
+void cleanup()
 {
-	// OpenVR cleanup
-	vr::VR_Shutdown();
 
-	// NVML cleanup
-#ifdef _WIN32
-	nvmlShutdown_t nvmlShutdownPtr = (nvmlShutdown_t)GetProcAddress(nvmlLibrary, "nvmlShutdown");
-	if (nvmlShutdownPtr)
-	{
-		nvmlShutdownPtr();
-	}
-	FreeLibrary(nvmlLibrary);
-#else
-	nvmlShutdown_t nvmlShutdownPtr = (nvmlShutdown_t)dlsym(nvmlLibrary, "nvmlShutdown");
-	if (nvmlShutdownPtr)
-	{
-		nvmlShutdownPtr();
-	}
-	dlclose(nvmlLibrary);
-#endif
 
 	// GUI cleanup
 	ImGui_ImplOpenGL3_Shutdown();
@@ -413,8 +368,35 @@ std::string get_executable_path()
 	return executable_path;
 }
 
+
+
+#include <windows.h>
+#include <iostream>
+#include <fstream>
+
+void OpenConsole()
+{
+    // 分配一个控制台窗口
+    AllocConsole();
+
+    // 将标准输出重定向到控制台
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);
+    freopen_s(&fp, "CONOUT$", "w", stderr);
+
+    // 将标准输入重定向到控制台
+    freopen_s(&fp, "CONIN$", "r", stdin);
+
+    // 设置控制台缓冲区
+    std::ios::sync_with_stdio();
+
+    std::cout << "Console initialized." << std::endl;
+}
+
+
 int main(int argc, char *argv[])
 {
+	OpenConsole();
 	 InitImGuiWithChineseFonts();
 	executable_path = argc > 0 ? std::filesystem::absolute(std::filesystem::path(argv[0])).string() : "";
 	auto& lang = LanguageManager::getInstance();
@@ -505,67 +487,7 @@ int main(int argc, char *argv[])
 	vr::VRSettings()->SetFloat(vr::k_pch_SteamVR_Section,
 							   vr::k_pch_SteamVR_SupersampleScale_Float, initialRes / 100.0f);
 
-#pragma region Initialise NVML
-	HMODULE nvmlLibrary;
-	nvmlDevice_t nvmlDevice;
-	float vramTotalGB;
-
-	if (vramMonitorEnabled)
-	{
-		nvmlInit_t nvmlInitPtr;
-#ifdef _WIN32
-		nvmlLibrary = LoadLibraryA("nvml.dll");
-		nvmlInitPtr = (nvmlInit_t)GetProcAddress(nvmlLibrary, "nvmlInit");
-#else
-		void *nvmlLibrary = dlopen("libnvidia-ml.so", RTLD_LAZY);
-		nvmlInitPtr = (nvmlInit_t)dlsym(nvmlLibrary, "nvmlInit");
-#endif
-		if (!nvmlInitPtr)
-		{
-			nvmlEnabled = false;
-		}
-		else
-		{
-			nvmlReturn_t result;
-			// Initialize NVML library
-			result = nvmlInitPtr();
-			if (result != NVML_SUCCESS)
-			{
-				nvmlEnabled = false;
-			}
-			else
-			{
-				// Get device handle
-				nvmlDeviceGetHandleByIndex_t nvmlDeviceGetHandleByIndexPtr;
-#ifdef _WIN32
-				nvmlDeviceGetHandleByIndexPtr = (nvmlDeviceGetHandleByIndex_t)GetProcAddress(nvmlLibrary, "nvmlDeviceGetHandleByIndex");
-#else
-				nvmlDeviceGetHandleByIndexPtr = (nvmlDeviceGetHandleByIndex_t)dlsym(nvmlLibrary, "nvmlDeviceGetHandleByIndex");
-#endif
-				if (!nvmlDeviceGetHandleByIndexPtr)
-					nvmlEnabled = false;
-				else
-					result = nvmlDeviceGetHandleByIndexPtr(0, &nvmlDevice);
-
-				if (result != NVML_SUCCESS || !nvmlEnabled)
-				{
-					// Shutdown NVML
-					nvmlShutdown_t nvmlShutdownPtr;
-#ifdef _WIN32
-					nvmlShutdownPtr = (nvmlShutdown_t)GetProcAddress(nvmlLibrary, "nvmlShutdown");
-#else
-					nvmlShutdownPtr = (nvmlShutdown_t)dlsym(nvmlLibrary, "nvmlShutdown");
-#endif
-					if (nvmlShutdownPtr)
-						nvmlShutdownPtr();
-				}
-			}
-		}
-	}
-	else
-	{
-		nvmlEnabled = false;
-	}
+	initGetGPUInfo();
 #pragma endregion
 #if defined(_WIN32)
 	const char *hideToggleText = "Hide";
@@ -611,7 +533,7 @@ int main(int argc, char *argv[])
 	int hmdHz = 0;
 	float hmdFrametime = 0;
 	int currentFps = 0;
-	float vramUsedGB = 0;
+	//float vramUsedGB = 0;
 
 	// GUI variables
 	bool showSettings = false;
@@ -686,27 +608,7 @@ int main(int argc, char *argv[])
 				targetFrametime *= 2;
 			}
 
-			// Get VRAM usage
-			float vramUsed = 0; // Assume we always have free VRAM by default
-			if (nvmlEnabled)
-			{
-				// Get memory info
-				nvmlDeviceGetMemoryInfo_t nvmlDeviceGetMemoryInfoPtr;
-#ifdef _WIN32
-				nvmlDeviceGetMemoryInfoPtr = (nvmlDeviceGetMemoryInfo_t)GetProcAddress(nvmlLibrary, "nvmlDeviceGetMemoryInfo");
-#else
-				nvmlDeviceGetMemoryInfoPtr = (nvmlDeviceGetMemoryInfo_t)dlsym(nvmlLibrary, "nvmlDeviceGetMemoryInfo");
-#endif
-				nvmlMemory_t nvmlMemory;
-				if (nvmlDeviceGetMemoryInfoPtr(nvmlDevice, &nvmlMemory) != NVML_SUCCESS)
-					nvmlEnabled = false;
-				else
-					vramTotalGB = nvmlMemory.total / bitsToGB;
-
-				vramUsedGB = nvmlMemory.used / bitsToGB;
-				if (nvmlEnabled) // Get the VRAM used in %
-					vramUsed = (float)nvmlMemory.used / (float)nvmlMemory.total;
-			}
+	getGPUInfo();
 #pragma endregion
 
 #pragma region Resolution adjustment
@@ -806,10 +708,10 @@ int main(int argc, char *argv[])
 				ImGui::Text("%s", LanguageManager::getInstance().translate("target_fps_disabled").c_str());
 			}
 			// VRAM target and limit
-			if (nvmlEnabled && nvmlEnabled)
+			if (GPUEnabled && GPUEnabled)
 			{
-				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("target_VRAM"), vramTarget / 100.0f * vramTotalGB).c_str());
-				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("limit_VRAM"), vramLimit / 100.0f * vramTotalGB).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("target_VRAM"), vramTarget / 100.f * vramTotalGB).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("limit_VRAM"), vramLimit / 100.f * vramTotalGB).c_str());
 			}
 			else{
 				ImGui::Text("%s", LanguageManager::getInstance().translate("target_VRAM_disabled").c_str());
@@ -823,13 +725,21 @@ int main(int argc, char *argv[])
 			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("CPU_frametime").c_str(), averageCpuTime).c_str());
 
 			// VRAM usage
-			if (nvmlEnabled)
-				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramUsedGB).c_str());
+			if (vramMonitorEnabled){
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramUsedGB, vramTotalGB).c_str());
+				//ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramTotalGB).c_str());
+				//printf("VRAM: %f\n", vramUsedGB);
+			}
+
 			else
+			{
 				ImGui::Text("%s", LanguageManager::getInstance().translate("VRAM_usage_disabled").c_str());
+			}
+			
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("GPU_usage").c_str(), gpuUsage).c_str());
+			//ImGui::Text("%s", fmt::format("GPU使用率 {} %", gpuUsage).c_str());
 
 			ImGui::NewLine();
-
 			// Reprojection ratio
 			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("Reprojection_ratio"), averageFrameShown - 1).c_str());
 			// Current resolution
@@ -1099,7 +1009,10 @@ if (showSettings)
 		std::this_thread::sleep_for(sleepTime);
 	}
 
-	cleanup(nvmlLibrary);
+	// OpenVR cleanup
+	vr::VR_Shutdown();
+	cleanupGPU();
+	cleanup();
 
 #if defined(_WIN32)
 	tray_exit();

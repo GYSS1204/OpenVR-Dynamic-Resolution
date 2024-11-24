@@ -96,13 +96,22 @@ ENDIF (APPLE)
 
 link_directories("${openvr_SOURCE_DIR}/lib/${OPENVR_PLATFORM_NAME}${OPENVR_PROCESSOR_ARCH}")
 
+
+set(all_file
+  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/AMD/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/AMD/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/AMD/SDK/platform/Windows/WinAPIs.cpp
+ )
+
+
+
 if(WIN32)
 link_directories("${OPENVR_CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 endif()
 if(WIN32)
-add_executable("${PROJECT_NAME}" ${GUI_TYPE} "src/main.cpp" "src/pathtools_excerpt.cpp" "src/setup.cpp" "src/tray_windows.c" "src/LanguageManager.cpp")
+add_executable("${PROJECT_NAME}" ${GUI_TYPE} "src/main.cpp" "src/pathtools_excerpt.cpp" "src/setup.cpp" "src/tray_windows.c" "src/LanguageManager.cpp" "src/get_info.cpp" ${all_file})
 else()
-add_executable("${PROJECT_NAME}" ${GUI_TYPE} "src/main.cpp" "src/setup.cpp" "src/LanguageManager.cpp")
+add_executable("${PROJECT_NAME}" ${GUI_TYPE} "src/main.cpp" "src/setup.cpp" "src/LanguageManager.cpp" "src/get_info.cpp")
 endif()
 
 target_link_libraries("${PROJECT_NAME}" openvr_api fmt::fmt-header-only simpleini imgui lodepng Threads::Threads)

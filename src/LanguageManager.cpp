@@ -29,9 +29,9 @@ void LanguageManager::initializeTranslations() {
             {JAPANESE, "目標FPS：無効"}
         }},
         {"target_VRAM", {
-            {ENGLISH, "Target VRAM: {} MB"},
-            {SIMPLIFIED_CHINESE, "目标显存：{} MB"},
-            {JAPANESE, "ターゲットVRAM：{} MB"}
+            {ENGLISH, "Target VRAM: {:.2f} GB"},
+            {SIMPLIFIED_CHINESE, "目标显存：{:.2f} GB"},
+            {JAPANESE, "ターゲットVRAM：{:.2f} GB"}
         }},
         {"target_VRAM_disabled", {
             {ENGLISH, "Target VRAM: Disabled"},
@@ -39,9 +39,9 @@ void LanguageManager::initializeTranslations() {
             {JAPANESE, "ターゲットVRAM：無効"}
         }},
         {"limit_VRAM", {
-            {ENGLISH, "Limit VRAM: {} MB"},
-            {SIMPLIFIED_CHINESE, "限制显存：{} MB"},
-            {JAPANESE, "VRAM制限：{} MB"}
+            {ENGLISH, "Limit VRAM: {:.2f} GB"},
+            {SIMPLIFIED_CHINESE, "限制显存：{:.2f} GB"},
+            {JAPANESE, "VRAM制限：{:.2f} GB"}
         }},
         {"limit_VRAM_disabled", {
             {ENGLISH, "Limit VRAM: Disabled"},
@@ -59,18 +59,23 @@ void LanguageManager::initializeTranslations() {
             {JAPANESE, "CPU フレームタイム：{:.2f} ミリ秒"}
         }},
         {"VRAM_usage", {
-            {ENGLISH, "VRAM usage: {} GB"},
-            {SIMPLIFIED_CHINESE, "GPU显存使用量：{} GB"},
-            {JAPANESE, "VRAM使用量：{} GB"}
+            {ENGLISH, "VRAM usage: {:.2f}/{:.2f} GB"},
+            {SIMPLIFIED_CHINESE, "GPU显存使用量：{:.2f}/{:.2f} GB"},
+            {JAPANESE, "VRAM使用量：{:.2f}/{:.2f} GB"}
         }},
         {"VRAM_usage_disabled", {
             {ENGLISH, "VRAM usage: Disabled"},
             {SIMPLIFIED_CHINESE, "显存使用：已关闭"},
             {JAPANESE, "VRAM使用：無効"}
         }},
+        {"GPU_usage", {
+            {ENGLISH, "GPU usage: {} %"},
+            {SIMPLIFIED_CHINESE, "GPU使用率：{} %"},
+            {JAPANESE, "GPU使用率：{} %"}
+        }},
         {"Reprojection_ratio", {
             {ENGLISH, "Reprojection ratio: {:.2f}"},
-            {SIMPLIFIED_CHINESE, "重投影比率：{:.2f}"},
+            {SIMPLIFIED_CHINESE, "重新渲染比率：{:.2f}"},
             {JAPANESE, "再投影比率：{:.2f}"}
         }},
         {"Resolution_info", {
