@@ -65,6 +65,8 @@ extern bool GPUEnabled;
 extern int gpuUsage;
 GpuType gpuType;
 
+int lastGPUUsage = 0;
+
 
 
 
@@ -537,8 +539,12 @@ void ShowCurrentGPUMetrics(IADLXPerformanceMonitoringServicesPtr perfMonitoringS
     {
         //std::cout << "The current GPU metrics: " << std::endl;
         //std::cout << std::boolalpha;  // Display boolean variable as true or false
-        GetTimeStamp(gpuMetrics);
-        gpuUsage = (int)ShowGPUUsage(gpuMetricsSupport, gpuMetrics);
+        //GetTimeStamp(gpuMetrics);
+
+        int currentgpuUsage = (int)ShowGPUUsage(gpuMetricsSupport, gpuMetrics);
+        gpuUsage = (currentgpuUsage + lastGPUUsage) / 2;
+        lastGPUUsage = currentgpuUsage;
+
         //ShowGPUTemperature(gpuMetricsSupport, gpuMetrics);
         //ShowGPUHotspotTemperature(gpuMetricsSupport, gpuMetrics);
         //ShowGPUTotalBoardPower(gpuMetricsSupport, gpuMetrics);

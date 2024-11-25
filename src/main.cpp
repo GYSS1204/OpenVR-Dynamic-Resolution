@@ -670,16 +670,22 @@ int main(int argc, char *argv[])
 					if (currentFps >= resIncreaseThresholdFPS && vramUsed < vramTarget / 100.0f && !vramOnlyMode && (gpuUsage < GPUusageLimit && GPUusageEnabled))
 					{
 						// Increase resolution
-						newRes += (((1000.f / resIncreaseThresholdFPS) - averageGpuTime) *
-								   (resIncreaseScale / 100.0f)) +
-								  resIncreaseMin;
+						if(averageGpuTime < (1000.f / resIncreaseThresholdFPS)){
+							newRes += (((1000.f / resIncreaseThresholdFPS) - averageGpuTime) *
+									(resIncreaseScale / 100.0f)) +
+									resIncreaseMin;
+						}
+
 					}
 					else if (currentFps < resDecreaseThresholdFPS && !vramOnlyMode && (gpuUsage > GPUusageTarget && GPUusageEnabled))
 					{
 						// Decrease resolution
-						newRes -= ((averageGpuTime - (1000.f / resDecreaseThresholdFPS)) *
-								   (resDecreaseScale / 100.0f)) +
-								  resDecreaseMin;
+						if(averageGpuTime > (1000.f / resDecreaseThresholdFPS)){
+							newRes -= ((averageGpuTime - (1000.f / resDecreaseThresholdFPS)) *
+									(resDecreaseScale / 100.0f)) +
+									resDecreaseMin;
+						}
+
 					}
 
 					// VRAM
