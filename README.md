@@ -105,3 +105,4 @@ We also use:
 - [DearImGui](https://github.com/ocornut/imgui) which is available under the MIT license.
 - [lodepng](https://github.com/lvandeve/lodepng/blob/master/LICENSE) which is available under the zlib license.
 - A [tray fork](https://github.com/dmikushin/tray) which is available under the MIT license.
+- [ADLX](https://github.com/GPUOpen-LibrariesAndSDKs/ADLX) which is available under the ADLX SDK License Agreement.

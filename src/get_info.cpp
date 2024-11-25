@@ -359,6 +359,9 @@ int getAMDGPUinfo() {
 }
 
 
+
+// Use ADLX SDK example code
+
 // Display the system time stamp (in ms)
 int64_t GetTimeStamp(IADLXGPUMetricsPtr gpuMetrics)
 {
