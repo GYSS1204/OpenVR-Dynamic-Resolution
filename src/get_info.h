@@ -7,7 +7,6 @@
 
 #pragma region NVML
 
-
 typedef enum nvmlReturn_enum
 {
 	NVML_SUCCESS = 0,					// The operation was successful.
@@ -28,8 +27,18 @@ typedef struct
 	unsigned long long used;
 } nvmlMemory_t;
 typedef nvmlReturn_t (*nvmlDevice_t)();
+
+
+typedef struct nvmlUtilization_st
+{
+    unsigned int gpu;                //!< Percent of time over the past sample period during which one or more kernels was executing on the GPU
+    unsigned int memory;             //!< Percent of time over the past sample period during which global (device) memory was being read or written
+} nvmlUtilization_t;
+
+
 typedef nvmlReturn_t (*nvmlDeviceGetHandleByIndex_t)(unsigned int, nvmlDevice_t *);
 typedef nvmlReturn_t (*nvmlDeviceGetMemoryInfo_t)(nvmlDevice_t, nvmlMemory_t *);
+typedef nvmlReturn_t (*nvmlDeviceGetUtilizationRates_t)(nvmlDevice_t, nvmlUtilization_t *);
 #ifdef _WIN32
 typedef HMODULE(nvmlLib);
 #else

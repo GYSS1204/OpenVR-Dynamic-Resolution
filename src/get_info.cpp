@@ -43,6 +43,8 @@
 #include "tray.h"
 
 
+
+
 enum class GpuType
 {
     AMD,
@@ -91,7 +93,7 @@ int getAMDGPUinfo();
 
 
 
-
+// NVIDIA
 int initNVIDIAGPU();
 void getNvidiaGPUinfo();
 void cleanupNvidiaGPU();
@@ -250,11 +252,14 @@ void getNvidiaGPUinfo(){
 			
 			if (nvmlEnabled)
 			{
-				// Get memory info
+				// Get GPU info
+                nvmlDeviceGetUtilizationRates_t nvmlDeviceGetUtilizationRatesPtr;
 				nvmlDeviceGetMemoryInfo_t nvmlDeviceGetMemoryInfoPtr;
 #ifdef _WIN32
+                nvmlDeviceGetUtilizationRatesPtr = (nvmlDeviceGetUtilizationRates_t)GetProcAddress(nvmlLibrary, "nvmlDeviceGetUtilizationRates");
 				nvmlDeviceGetMemoryInfoPtr = (nvmlDeviceGetMemoryInfo_t)GetProcAddress(nvmlLibrary, "nvmlDeviceGetMemoryInfo");
 #else
+                nvmlDeviceGetUtilizationRatesPtr = (nvmlDeviceGetUtilizationRates_t)dlsym(nvmlLibrary, "nvmlDeviceGetUtilizationRates");
 				nvmlDeviceGetMemoryInfoPtr = (nvmlDeviceGetMemoryInfo_t)dlsym(nvmlLibrary, "nvmlDeviceGetMemoryInfo");
 #endif
 				nvmlMemory_t nvmlMemory;
@@ -266,9 +271,19 @@ void getNvidiaGPUinfo(){
 				vramUsedGB = nvmlMemory.used / bitsToGB;
 				if (nvmlEnabled) // Get the VRAM used in %
 					vramUsed = (float)nvmlMemory.used / (float)nvmlMemory.total;
+                
+                nvmlUtilization_t utilization;
+                if (nvmlDeviceGetUtilizationRatesPtr(nvmlDevice, &utilization) != NVML_SUCCESS) {
+                    //std::cerr << "Failed to get utilization rates: " << nvmlErrorString(result) << std::endl;
+                    nvmlEnabled = false;
+                }
+                else {
+                    int currentgpuUsage = utilization.gpu;
+                    gpuUsage = (currentgpuUsage + lastGPUUsage) / 2;
+                    lastGPUUsage = currentgpuUsage;
+                }
 			}
 }
-
 
 void cleanupNvidiaGPU()
 {
