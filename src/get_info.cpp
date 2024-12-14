@@ -66,6 +66,9 @@ bool ADLXEnabled = true;
 extern bool GPUEnabled;
 extern int gpuUsage;
 GpuType gpuType;
+extern float ramUsedGB;
+extern float ramTotalGB;
+extern float ramUsed;
 
 int lastGPUUsage = 0;
 
@@ -98,7 +101,7 @@ int initNVIDIAGPU();
 void getNvidiaGPUinfo();
 void cleanupNvidiaGPU();
 
-
+void GetMemoryUsage();
 
 
 
@@ -162,6 +165,7 @@ void getGPUInfo() {
         else if(gpuType == GpuType::AMD){
             getAMDGPUinfo();
         }
+        GetMemoryUsage();
     }
 }
 
@@ -179,7 +183,30 @@ void cleanupGPU(){
 }
 
 
+ void GetMemoryUsage(){
+    // MEMORYSTATUSEX 用于存储内存状态信息
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
 
+    // 获取内存状态信息
+    if (GlobalMemoryStatusEx(&memInfo)) {
+        // 总内存大小（字节）
+        DWORDLONG totalMemory = memInfo.ullTotalPhys;
+
+        // 可用内存大小（字节）
+        DWORDLONG availableMemory = memInfo.ullAvailPhys;
+
+        // 已使用内存大小 = 总内存 - 可用内存
+        DWORDLONG usedMemory = totalMemory - availableMemory;
+
+        ramUsedGB = (double)usedMemory / bitsToGB;
+        ramTotalGB = (double)totalMemory / bitsToGB;
+        ramUsed = ramUsedGB / ramTotalGB;
+    } else {
+        // 错误处理
+        printf("Failed to get memory status.\n");
+    }
+}
 
 
 
@@ -567,6 +594,7 @@ void ShowCurrentGPUMetrics(IADLXPerformanceMonitoringServicesPtr perfMonitoringS
         //ShowGPUHotspotTemperature(gpuMetricsSupport, gpuMetrics);
         //ShowGPUTotalBoardPower(gpuMetricsSupport, gpuMetrics);
         vramUsedGB = ShowGPUVRAM(gpuMetricsSupport, gpuMetrics) / MBToGB;
+        vramUsed = vramUsedGB / vramTotalGB;
         //std::cout << std::noboolalpha;
     }
 

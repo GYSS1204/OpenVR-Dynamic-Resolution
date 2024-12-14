@@ -59,9 +59,9 @@ void LanguageManager::initializeTranslations() {
             {JAPANESE, "CPU フレームタイム：{:.2f} ミリ秒"}
         }},
         {"VRAM_usage", {
-            {ENGLISH, "VRAM usage: {:.2f}/{:.2f} GB"},
-            {SIMPLIFIED_CHINESE, "GPU显存使用量：{:.2f}/{:.2f} GB"},
-            {JAPANESE, "VRAM使用量：{:.2f}/{:.2f} GB"}
+            {ENGLISH, "VRAM usage: {:.2f}/{:.2f} GB ({}%)"},
+            {SIMPLIFIED_CHINESE, "GPU显存使用量：{:.2f}/{:.2f} GB ({}%)"},
+            {JAPANESE, "VRAM使用量：{:.2f}/{:.2f} GB ({}%)"}
         }},
         {"VRAM_usage_disabled", {
             {ENGLISH, "VRAM usage: Disabled"},
@@ -478,6 +478,36 @@ void LanguageManager::initializeTranslations() {
             {ENGLISH, "When GPU usage falls below this percentage, the resolution stops decreasing."},
             {SIMPLIFIED_CHINESE, "当GPU使用率低于此百分比时，分辨率停止下降"},
             {JAPANESE, "GPU 使用率がこのパーセンテージを下回ると、解像度の低下が停止します"}
+        }},
+        {"RAM", {
+            {ENGLISH, "RAM"},
+            {SIMPLIFIED_CHINESE, "内存"},
+            {JAPANESE, "RAM"}
+        }},
+        {"RAM_monitor_enabled", {
+            {ENGLISH, "RAM monitor enabled"},
+            {SIMPLIFIED_CHINESE, "启用内存监控"},
+            {JAPANESE, "メモリ監視を有効にする"}
+        }},
+        {"Tooltip_ram_monitor", {
+            {ENGLISH, "Enables memory related features. If disabled, memory is assumed to be always available."},
+            {SIMPLIFIED_CHINESE, "启用内存相关功能。如果禁用，假定内存总是可用。"},
+            {JAPANESE, "メモリ関連の機能を有効にします。無効にすると、メモリは常に使用可能であるとみなされます。"}
+        }},
+        {"RAM_limit", {
+            {ENGLISH, "RAM limit"},
+            {SIMPLIFIED_CHINESE, "限制内存大小"},
+            {JAPANESE, "メモリサイズを制限する"}
+        }},
+        {"Tooltip_ram_limit", {
+            {ENGLISH, "When memory usage exceeds this value, the resolution stops changing."},
+            {SIMPLIFIED_CHINESE, "内存使用率超过此值时，分辨率停止改变。"},
+            {JAPANESE, "メモリ使用量がこの値を超えると、解像度の変更が停止します。"}
+        }},
+        {"RAM_usage", {
+            {ENGLISH, "RAM usage: {:.2f}/{:.2f} GB ({}%)"},
+            {SIMPLIFIED_CHINESE, "内存使用量：{:.2f}/{:.2f} GB ({}%)"},
+            {JAPANESE, "RAM使用量：{:.2f}/{:.2f} GB ({}%)"}
         }},
 
 

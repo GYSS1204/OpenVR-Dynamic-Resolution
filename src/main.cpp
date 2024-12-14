@@ -116,6 +116,14 @@ bool GPUEnabled = true;
 float vramUsedGB = 0;
 float vramUsed = 0; // Assume we always have free VRAM by default
 int gpuUsage = 0;
+
+// RAM
+float ramUsedGB = 0;
+float ramTotalGB = 0;
+bool ramMonitorEnabled = false;
+int ramLimit = 90; 
+float ramUsed = 0;
+
 #pragma endregion
 
 
@@ -204,7 +212,9 @@ bool loadSettings()
 		GPUusageEnabled = std::stoi(ini.GetValue("GPUusage", "GPUusageEnabled", std::to_string(GPUusageEnabled).c_str()));
 		GPUusageLimit = std::stoi(ini.GetValue("GPUusage", "GPUusageLimit", std::to_string(GPUusageLimit).c_str()));
 		GPUusageTarget = std::stoi(ini.GetValue("GPUusage", "GPUusageTarget", std::to_string(GPUusageTarget).c_str()));
-
+		// RAM
+		ramMonitorEnabled = std::stoi(ini.GetValue("RAM", "ramMonitorEnabled", std::to_string(ramMonitorEnabled).c_str()));
+		ramLimit = std::stoi(ini.GetValue("RAM", "ramLimit", std::to_string(ramLimit).c_str()));
 
 		return true;
 	}
@@ -254,7 +264,9 @@ void saveSettings()
 	ini.SetValue("GPUusage", "GPUusageEnabled", std::to_string(GPUusageEnabled).c_str());
 	ini.SetValue("GPUusage", "GPUusageLimit", std::to_string(GPUusageLimit).c_str());
 	ini.SetValue("GPUusage", "GPUusageTarget", std::to_string(GPUusageTarget).c_str());
-
+	// RAM
+	ini.SetValue("RAM", "ramMonitorEnabled", std::to_string(ramMonitorEnabled).c_str());
+	ini.SetValue("RAM", "ramLimit", std::to_string(ramLimit).c_str());
 	// Save changes to disk
 	ini.SaveFile("settings.ini");
 }
@@ -419,7 +431,7 @@ void OpenConsole()
 int main(int argc, char *argv[])
 {
 	//OpenConsole();
-	 InitImGuiWithChineseFonts();
+	InitImGuiWithChineseFonts();
 	executable_path = argc > 0 ? std::filesystem::absolute(std::filesystem::path(argv[0])).string() : "";
 	auto& lang = LanguageManager::getInstance();
 #pragma region GUI init
@@ -667,7 +679,8 @@ int main(int argc, char *argv[])
 				if ((averageCpuTime > minCpuTimeThreshold || vramOnlyMode))
 				{
 					// Frametime
-					if (currentFps >= resIncreaseThresholdFPS && vramUsed < vramTarget / 100.0f && !vramOnlyMode && (gpuUsage < GPUusageLimit && GPUusageEnabled))
+					if (currentFps >= resIncreaseThresholdFPS && ((vramUsed < vramTarget / 100.0f && vramMonitorEnabled) || !vramMonitorEnabled) && !vramOnlyMode &&
+					 ((gpuUsage < GPUusageLimit && GPUusageEnabled) || !GPUusageEnabled) && ((ramUsed < ramLimit / 100.0f && ramMonitorEnabled) || !ramMonitorEnabled))
 					{
 						// Increase resolution
 						if(averageGpuTime < (1000.f / resIncreaseThresholdFPS)){
@@ -677,7 +690,7 @@ int main(int argc, char *argv[])
 						}
 
 					}
-					else if (currentFps < resDecreaseThresholdFPS && !vramOnlyMode && (gpuUsage > GPUusageTarget && GPUusageEnabled))
+					else if (currentFps < resDecreaseThresholdFPS && !vramOnlyMode && (gpuUsage > GPUusageTarget && GPUusageEnabled) && (ramUsed < ramLimit / 100.0f && ramMonitorEnabled))
 					{
 						// Decrease resolution
 						if(averageGpuTime > (1000.f / resDecreaseThresholdFPS)){
@@ -689,7 +702,7 @@ int main(int argc, char *argv[])
 					}
 
 					// VRAM
-					if (vramUsed > vramLimit / 100.0f)
+					if (vramUsed > vramLimit / 100.0f && ((ramUsed < ramLimit / 100.0f && ramMonitorEnabled) || !ramMonitorEnabled))
 					{
 						// Force the resolution to decrease when the vram limit is reached
 						newRes -= resDecreaseMin;
@@ -778,7 +791,7 @@ int main(int argc, char *argv[])
 
 			// VRAM usage
 			if (vramMonitorEnabled){
-				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramUsedGB, vramTotalGB).c_str());
+				ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramUsedGB, vramTotalGB, (int)(vramUsed * 100)).c_str());
 				//ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("VRAM_usage").c_str(), vramTotalGB).c_str());
 				//printf("VRAM: %f\n", vramUsedGB);
 			}
@@ -790,6 +803,10 @@ int main(int argc, char *argv[])
 			
 			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("GPU_usage").c_str(), gpuUsage).c_str());
 			//ImGui::Text("%s", fmt::format("GPU使用率 {} %", gpuUsage).c_str());
+
+			ImGui::NewLine();
+			// RAM usage
+			ImGui::Text("%s", fmt::format(LanguageManager::getInstance().translate("RAM_usage").c_str(), ramUsedGB, ramTotalGB, (int)(ramUsed * 100)).c_str());
 
 			ImGui::NewLine();
 			// Reprojection ratio
@@ -995,6 +1012,17 @@ if (showSettings)
 				vramLimit = std::clamp(vramLimit, 0, 100);
 			addTooltip(LanguageManager::getInstance().translate("Tooltip_vram_limit").c_str());
 		}
+
+		if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("RAM").c_str()))
+		{
+			ImGui::Checkbox(LanguageManager::getInstance().translate("RAM_monitor_enabled").c_str(), &ramMonitorEnabled);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_ram_monitor").c_str());
+
+			if (ImGui::InputInt(LanguageManager::getInstance().translate("RAM_limit").c_str(), &ramLimit, 2))
+				ramLimit = std::clamp(ramLimit, 0, 100);
+			addTooltip(LanguageManager::getInstance().translate("Tooltip_ram_limit").c_str());
+		}
+
 		if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("GPU_usage_b").c_str()))
 		{
 			ImGui::Checkbox(LanguageManager::getInstance().translate("GPU_usage_enabled").c_str(), &GPUusageEnabled);
