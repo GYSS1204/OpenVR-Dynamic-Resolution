@@ -57,7 +57,7 @@ namespace ImGui
 using namespace std::chrono_literals;
 using namespace vr;
 
-static constexpr const char *version = "v1.2.0";
+static constexpr const char *version = "v1.2.1";
 
 static constexpr const char *iconPath = "icon.png";
 
@@ -961,15 +961,15 @@ if (showSettings)
 		}
 		addTooltip(LanguageManager::getInstance().translate("Tooltip_data_average_samples").c_str());
 
-				ImGui::Checkbox("External res change compatibility", &externalResChangeCompatibility);
-				addTooltip("Automatically switch to manual resolution adjustment within the app when VR resolution is changed from an external source (SteamVR setting, Oyasumi, etc.) as to let the external source control the resolution. Does not automatically switch back to dynamic resolution adjustment.");
+				ImGui::Checkbox(LanguageManager::getInstance().translate("External_res_change_compatibility").c_str(), &externalResChangeCompatibility);
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_external_res_change_compatibility").c_str());
 
-				ImGui::Text("Blacklist");
-				addTooltip("Don't allow resolution changes in blacklisted applications.");
-				if (ImGui::InputTextMultiline("Blacklisted apps", &blacklistApps, ImVec2(130, 60), ImGuiInputTextFlags_CharsNoBlank))
+				ImGui::Text(LanguageManager::getInstance().translate("Blacklist").c_str());
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_blacklist").c_str());
+				if (ImGui::InputTextMultiline(LanguageManager::getInstance().translate("Blacklisted_apps").c_str(), &blacklistApps, ImVec2(130, 60), ImGuiInputTextFlags_CharsNoBlank))
 					blacklistAppsSet = multilineStringToSet(blacklistApps);
-				addTooltip("List of OpenVR application keys that should be blacklisted for resolution adjustment in the format \'steam.app.APPID\' (e.g. \'steam.app.620980\' for Beat Saber). One per line.");
-				if (ImGui::Button(LanguageManager::getInstance().translate("Disable_current_application").c_str(), ImVec2(160, 26)))
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_blacklisted_apps").c_str());
+				if (ImGui::Button(LanguageManager::getInstance().translate("Blacklist_current_app").c_str(), ImVec2(160, 26)))
 				{
 					std::string appKey = getCurrentApplicationKey();
 					if (!isApplicationBlacklisted(appKey))
@@ -980,14 +980,14 @@ if (showSettings)
 						blacklistApps += appKey;
 					}
 				}
-				addTooltip("Adds the current application to the blacklist.");
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_blacklist_current_app").c_str());
 
-				ImGui::Checkbox("Enable whitelist", &whitelistEnabled);
-				addTooltip("Only allow resolution changes in whitelisted applications.");
-				if (ImGui::InputTextMultiline("Whitelisted apps", &whitelistApps, ImVec2(130, 60), ImGuiInputTextFlags_CharsNoBlank))
+				ImGui::Checkbox(LanguageManager::getInstance().translate("Enable_whitelist").c_str(), &whitelistEnabled);
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_enable_whitelist").c_str());
+				if (ImGui::InputTextMultiline(LanguageManager::getInstance().translate("Whitelisted_apps").c_str(), &whitelistApps, ImVec2(130, 60), ImGuiInputTextFlags_CharsNoBlank))
 					whitelistAppsSet = multilineStringToSet(whitelistApps);
-				addTooltip("List of OpenVR application keys that should be whitelisted for resolution adjustment in the format \'steam.app.APPID\' (e.g. \'steam.app.620980\' for Beat Saber). One per line.");
-				if (ImGui::Button("Whitelist current app", ImVec2(164, 26)))
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_whitelisted_apps").c_str());
+				if (ImGui::Button(LanguageManager::getInstance().translate("Whitelist_current_app").c_str(), ImVec2(164, 26)))
 				{
 					std::string appKey = getCurrentApplicationKey();
 					if (!isApplicationWhitelisted(appKey))
@@ -998,7 +998,7 @@ if (showSettings)
 						whitelistApps += appKey;
 					}
 				}
-				addTooltip("Adds the current application to the whitelist.");
+				addTooltip(LanguageManager::getInstance().translate("Tooltip_whitelisted_current_app").c_str());
 			}
 
     if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("Resolution").c_str()))

@@ -208,15 +208,75 @@ void LanguageManager::initializeTranslations() {
             {SIMPLIFIED_CHINESE, "禁用当前应用程序"},
             {JAPANESE, "現在のアプリケーションを無効にする"}
         }},
-        {"Disable_application", {
-            {ENGLISH, "Disable application"},
-            {SIMPLIFIED_CHINESE, "禁用应用程序"},
-            {JAPANESE, "アプリケーションを無効にする"}
+        {"External_res_change_compatibility", {
+            {ENGLISH, "External res change compatibility"},
+            {SIMPLIFIED_CHINESE, "外部资源变更兼容性"},
+            {JAPANESE, "外部解像度変更の互換性"}
         }},
-        {"Tooltip_disable_current_application", {
-            {ENGLISH, "Adds the current application to the list of disabled applications."},
-            {SIMPLIFIED_CHINESE, "将当前应用程序添加到禁用应用程序列表中。"},
-            {JAPANESE, "現在のアプリケーションを無効なアプリケーションのリストに追加します。"}
+        {"Tooltip_external_res_change_compatibility", {
+            {ENGLISH, "Automatically switch to manual resolution adjustment within the app when VR resolution is changed from an external source (SteamVR setting, Oyasumi, etc.) as to let the external source control the resolution. Does not automatically switch back to dynamic resolution adjustment."},
+            {SIMPLIFIED_CHINESE, "当 VR 分辨率从外部源（SteamVR 设置、Oyasumi 等）更改时，自动在应用程序内切换到手动分辨率调整，以便让外部源控制分辨率。不会自动切换回动态分辨率调整。"},
+            {JAPANESE, "外部ソース（SteamVR設定、おやすみなど）からVR解像度が変更された場合、外部ソースが解像度を制御できるように、アプリ内で手動解像度調整に自動的に切り替えます。動的解像度調整に自動的に切り替わりません。"}
+        }},
+        {"Blacklist", {
+            {ENGLISH, "Blacklist"},
+            {SIMPLIFIED_CHINESE, "黑名单"},
+            {JAPANESE, "ブラックリスト"}
+        }},
+        {"Tooltip_blacklist", {
+            {ENGLISH, "Don't allow resolution changes in blacklisted applications."},
+            {SIMPLIFIED_CHINESE, "不允许在黑名单应用程序中更改分辨率。"},
+            {JAPANESE, "ブラックリストに登録されたアプリケーションでは解像度の変更を許可しません。"}
+        }},
+        {"Blacklisted_apps", {
+            {ENGLISH, "Blacklisted apps"},
+            {SIMPLIFIED_CHINESE, "列入黑名单的应用程序"},
+            {JAPANESE, "ブラックリストに登録されたアプリ"}
+        }},
+        {"Tooltip_blacklisted_apps", {
+            {ENGLISH, "List of OpenVR application keys that should be blacklisted for resolution adjustment in the format \'steam.app.APPID\' (e.g. \'steam.app.620980\' for Beat Saber). One per line."},
+            {SIMPLIFIED_CHINESE, "应列入黑名单以进行分辨率调整的 OpenVR 应用程序密钥列表，格式为 \'steam.app.APPID\'（例如 Beat Saber 为 \'steam.app.620980\'）。每行一个。"},
+            {JAPANESE, "解像度調整のためにブラックリストに登録する必要がある OpenVR アプリケーション キーのリスト。形式は \'steam.app.APPID\' (例: Beat Saber の場合は \'steam.app.620980\') です。1 行に 1 つずつ。"}
+        }},
+        {"Blacklist_current_app", {
+            {ENGLISH, "Blacklist current app"},
+            {SIMPLIFIED_CHINESE, "将当前应用加入黑名单"},
+            {JAPANESE, "現在のアプリをブラックリストに追加する"}
+        }},
+        {"Tooltip_blacklist_current_app", {
+            {ENGLISH, "Adds the current application to the blacklist."},
+            {SIMPLIFIED_CHINESE, "将当前应用程序添加到黑名单。"},
+            {JAPANESE, "現在のアプリケーションをブラックリストに追加します。"}
+        }},
+        {"Enable_whitelist", {
+            {ENGLISH, "Enable whitelist"},
+            {SIMPLIFIED_CHINESE, "启用白名单"},
+            {JAPANESE, "ホワイトリストを有効にする"}
+        }},
+        {"Tooltip_enable_whitelist", {
+            {ENGLISH, "Only allow resolution changes in whitelisted applications."},
+            {SIMPLIFIED_CHINESE, "仅允许在白名单应用程序中更改分辨率。"},
+            {JAPANESE, "ホワイトリストに登録されたアプリケーションでのみ解像度の変更を許可します。"}
+        }},
+        {"Whitelisted_apps", {
+            {ENGLISH, "Whitelisted apps"},
+            {SIMPLIFIED_CHINESE, "列入白名单的应用程序"},
+            {JAPANESE, "ホワイトリストに登録されたアプリ"}
+        }},
+        {"Tooltip_whitelisted_apps", {
+            {ENGLISH, "List of OpenVR application keys that should be whitelisted for resolution adjustment in the format \'steam.app.APPID\' (e.g. \'steam.app.620980\' for Beat Saber). One per line."},
+            {SIMPLIFIED_CHINESE, "应列入白名单以进行分辨率调整的 OpenVR 应用程序密钥列表，格式为 \'steam.app.APPID\'（例如 Beat Saber 为 \'steam.app.620980\'）。每行一个。"},
+            {JAPANESE, "解像度調整のためにホワイトリストに登録する必要がある OpenVR アプリケーション キーのリスト。形式は \'steam.app.APPID\' (例: Beat Saber の場合は \'steam.app.620980\')。1 行に 1 つずつ。"}
+        }},
+        {"Whitelist_current_app", {
+            {ENGLISH, "Whitelist current app"},
+            {SIMPLIFIED_CHINESE, "将当前应用加入白名单"},
+            {JAPANESE, "現在のアプリをホワイトリストに追加する"}
+        }},
+        {"Tooltip_whitelisted_current_app", {
+            {ENGLISH, "Adds the current application to the blacklist."},
+            {SIMPLIFIED_CHINESE, "将当前应用程序添加到白名单。"},
+            {JAPANESE, "現在のアプリケーションをホワイトリストに追加します。"}
         }},
         {"Initial_resolution", {
             {ENGLISH, "Initial resolution"},
