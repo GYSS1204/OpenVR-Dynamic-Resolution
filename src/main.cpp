@@ -57,7 +57,7 @@ namespace ImGui
 using namespace std::chrono_literals;
 using namespace vr;
 
-static constexpr const char *version = "v1.1.0";
+static constexpr const char *version = "v1.2.0";
 
 static constexpr const char *iconPath = "icon.png";
 
@@ -83,12 +83,16 @@ int languageIndex = 0;
 // General
 int resChangeDelayMs = 3000;
 int dataAverageSamples = 128;
-std::string disabledApps = "steam.app.620980 steam.app.658920 steam.app.2177750 steam.app.2177760"; // Beat Saber and HL2VR
-std::set<std::string> disabledAppsSet = {"steam.app.620980", "steam.app.658920", "steam.app.2177750", "steam.app.2177760"};
+bool externalResChangeCompatibility = false;
+std::string blacklistApps = "steam.app.620980 steam.app.658920 steam.app.2177750 steam.app.2177760"; // Beat Saber and HL2VR
+std::set<std::string> blacklistAppsSet = {"steam.app.620980", "steam.app.658920", "steam.app.2177750", "steam.app.2177760"};
+bool whitelistEnabled = false;
+std::string whitelistApps = "";
+std::set<std::string> whitelistAppsSet = {};
 // Resolution
 int initialRes = 100;
 int minRes = 70;
-int maxRes = 250;
+int maxRes = 200;
 int resIncreaseThreshold = 80;
 int resDecreaseThreshold = 88;
 int resIncreaseThresholdFPS = 60;
@@ -177,14 +181,23 @@ bool loadSettings()
 		autoStart = std::stoi(ini.GetValue("Startup", "autoStart", std::to_string(autoStart).c_str()));
 		minimizeOnStart = std::stoi(ini.GetValue("Startup", "minimizeOnStart", std::to_string(minimizeOnStart).c_str()));
 		languageIndex = std::stoi(ini.GetValue("Startup", "languageIndex", std::to_string(languageIndex).c_str()));
+
 		// General
 		resChangeDelayMs = std::stoi(ini.GetValue("General", "resChangeDelayMs", std::to_string(resChangeDelayMs).c_str()));
 		dataAverageSamples = std::stoi(ini.GetValue("General", "dataAverageSamples", std::to_string(dataAverageSamples).c_str()));
+		externalResChangeCompatibility = std::stoi(ini.GetValue("General", "externalResChangeCompatibility", std::to_string(externalResChangeCompatibility).c_str()));
 		if (dataAverageSamples > 128)
 			dataAverageSamples = 128; // Max stored by OpenVR
-		disabledApps = ini.GetValue("General", "disabledApps", disabledApps.c_str());
-		std::replace(disabledApps.begin(), disabledApps.end(), ' ', '\n');
-		disabledAppsSet = multilineStringToSet(disabledApps);
+		// blacklist
+		blacklistApps = ini.GetValue("General", "disabledApps", blacklistApps.c_str());
+		std::replace(blacklistApps.begin(), blacklistApps.end(), ' ', '\n');
+		blacklistAppsSet = multilineStringToSet(blacklistApps);
+		// whitelist
+		whitelistEnabled = std::stoi(ini.GetValue("General", "whitelistEnabled", std::to_string(whitelistEnabled).c_str()));
+		whitelistApps = ini.GetValue("General", "whitelistApps", blacklistApps.c_str());
+		std::replace(whitelistApps.begin(), whitelistApps.end(), ' ', '\n');
+		whitelistAppsSet = multilineStringToSet(whitelistApps);
+
 		// Resolution
 		initialRes = std::stoi(ini.GetValue("Resolution", "initialRes", std::to_string(initialRes).c_str()));
 		minRes = std::stoi(ini.GetValue("Resolution", "minRes", std::to_string(minRes).c_str()));
@@ -199,10 +212,12 @@ bool loadSettings()
 		resDecreaseScale = std::stoi(ini.GetValue("Resolution", "resDecreaseScale", std::to_string(resDecreaseScale).c_str()));
 		minCpuTimeThreshold = std::stof(ini.GetValue("Resolution", "minCpuTimeThreshold", std::to_string(minCpuTimeThreshold).c_str()));
 		resetOnThreshold = std::stoi(ini.GetValue("Resolution", "resetOnThreshold", std::to_string(resetOnThreshold).c_str()));
+
 		// Reprojection
 		alwaysReproject = std::stoi(ini.GetValue("Reprojection", "alwaysReproject", std::to_string(alwaysReproject).c_str()));
 		preferReprojection = std::stoi(ini.GetValue("Reprojection", "preferReprojection", std::to_string(preferReprojection).c_str()));
 		ignoreCpuTime = std::stoi(ini.GetValue("Reprojection", "ignoreCpuTime", std::to_string(ignoreCpuTime).c_str()));
+
 		// VRAM
 		vramMonitorEnabled = std::stoi(ini.GetValue("VRAM", "vramMonitorEnabled", std::to_string(vramMonitorEnabled).c_str()));
 		vramOnlyMode = std::stoi(ini.GetValue("VRAM", "vramOnlyMode", std::to_string(vramOnlyMode).c_str()));
@@ -215,6 +230,7 @@ bool loadSettings()
 		// RAM
 		ramMonitorEnabled = std::stoi(ini.GetValue("RAM", "ramMonitorEnabled", std::to_string(ramMonitorEnabled).c_str()));
 		ramLimit = std::stoi(ini.GetValue("RAM", "ramLimit", std::to_string(ramLimit).c_str()));
+
 
 		return true;
 	}
@@ -233,10 +249,15 @@ void saveSettings()
 	ini.SetValue("Startup", "autoStart", std::to_string(autoStart).c_str());
 	ini.SetValue("Startup", "minimizeOnStart", std::to_string(minimizeOnStart).c_str());
 	ini.SetValue("Startup", "languageIndex", std::to_string(languageIndex).c_str());
+
 	// General
 	ini.SetValue("General", "resChangeDelayMs", std::to_string(resChangeDelayMs).c_str());
 	ini.SetValue("General", "dataAverageSamples", std::to_string(dataAverageSamples).c_str());
-	ini.SetValue("General", "disabledApps", setToConfigString(disabledAppsSet).c_str());
+	ini.SetValue("General", "externalResChangeCompatibility", std::to_string(externalResChangeCompatibility).c_str());
+	ini.SetValue("General", "disabledApps", setToConfigString(blacklistAppsSet).c_str());
+	ini.SetValue("General", "whitelistEnabled", std::to_string(whitelistEnabled).c_str());
+	ini.SetValue("General", "whitelistApps", setToConfigString(whitelistAppsSet).c_str());
+
 	// Resolution
 	ini.SetValue("Resolution", "initialRes", std::to_string(initialRes).c_str());
 	ini.SetValue("Resolution", "minRes", std::to_string(minRes).c_str());
@@ -251,10 +272,12 @@ void saveSettings()
 	ini.SetValue("Resolution", "resDecreaseScale", std::to_string(resDecreaseScale).c_str());
 	ini.SetValue("Resolution", "minCpuTimeThreshold", std::to_string(minCpuTimeThreshold).c_str());
 	ini.SetValue("Resolution", "resetOnThreshold", std::to_string(resetOnThreshold).c_str());
+
 	// Reprojection
 	ini.SetValue("Reprojection", "alwaysReproject", std::to_string(alwaysReproject).c_str());
 	ini.SetValue("Reprojection", "preferReprojection", std::to_string(preferReprojection).c_str());
 	ini.SetValue("Reprojection", "ignoreCpuTime", std::to_string(ignoreCpuTime).c_str());
+
 	// VRAM
 	ini.SetValue("VRAM", "vramMonitorEnabled", std::to_string(vramMonitorEnabled).c_str());
 	ini.SetValue("VRAM", "vramOnlyMode", std::to_string(vramOnlyMode).c_str());
@@ -297,9 +320,14 @@ std::string getCurrentApplicationKey()
 	return {applicationKey};
 }
 
-bool isApplicationDisabled(std::string appKey)
+bool isApplicationBlacklisted(std::string appKey)
 {
-	return disabledAppsSet.find(appKey) != disabledAppsSet.end() || appKey == "";
+	return appKey == "" || blacklistAppsSet.find(appKey) != blacklistAppsSet.end();
+}
+
+bool isApplicationWhitelisted(std::string appKey)
+{
+	return appKey != "" && whitelistAppsSet.find(appKey) != whitelistAppsSet.end();
 }
 
 bool shouldAdjustResolution(std::string appKey, bool manualRes, float cpuTime)
@@ -307,9 +335,9 @@ bool shouldAdjustResolution(std::string appKey, bool manualRes, float cpuTime)
 	// Check if the SteamVR dashboard is open
 	bool inDashboard = vr::VROverlay()->IsDashboardVisible();
 	// Check that we're in a supported application
-	bool isCurrentAppDisabled = isApplicationDisabled(appKey);
+	bool isCurrentAppSupported = !isApplicationBlacklisted(appKey) && (!whitelistEnabled || isApplicationWhitelisted(appKey));
 	// Only adjust resolution if not in dashboard, in a supported application. user didn't pause res and cpu time isn't below threshold
-	return !inDashboard && !isCurrentAppDisabled && !manualRes && !(resetOnThreshold && cpuTime < minCpuTimeThreshold);
+	return !inDashboard && isCurrentAppSupported && !manualRes && !(resetOnThreshold && cpuTime < minCpuTimeThreshold);
 }
 
 void pushGrayButtonColour()
@@ -332,6 +360,8 @@ void pushGreenButtonColour()
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25, 0.73, 0.25, 1));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17, 0.68, 0.17, 1));
 }
+
+
 
 void printLine(std::string text, long duration)
 {
@@ -447,7 +477,7 @@ int main(int argc, char *argv[])
 	glfwWindowHint(GLFW_RESIZABLE, false);
 
 	// Create window with graphics context
-	glfwWindow = glfwCreateWindow(mainWindowWidth, mainWindowHeight, fmt::format("OVR Dynamic Resolution {}", version).c_str(), nullptr, nullptr);
+	glfwWindow = glfwCreateWindow(mainWindowWidth, mainWindowHeight, "OVR Dynamic Resolution", nullptr, nullptr);
 	if (glfwWindow == nullptr)
 		return 1;
 	glfwMakeContextCurrent(glfwWindow);
@@ -498,13 +528,13 @@ int main(int argc, char *argv[])
 #pragma endregion
 
 	// Load settings from ini file
-	if (!loadSettings()){
-		saveSettings(); // Restore settings
-	}
-	else{
+	if (!loadSettings()) {
+		std::replace(blacklistApps.begin(), blacklistApps.end(), ' ', '\n'); // Set blacklist newlines
+		saveSettings();														 // Restore settings
+	} else {
 		settingFlag = true;
 	}
-		
+
 	setLanguage(languageIndex);
 
 	// Set auto-start
@@ -566,7 +596,7 @@ int main(int argc, char *argv[])
 	float averageGpuTime = 0;
 	float averageCpuTime = 0;
 	float averageFrameShown = 0;
-	int newRes = 0;
+	float newRes = initialRes;
 	int targetFps = 0;
 	float targetFrametime = 0;
 	int hmdHz = 0;
@@ -592,8 +622,14 @@ int main(int argc, char *argv[])
 			//lastChangeTime = currentTime;
 
 #pragma region Getting data
+			float currentRes = vr::VRSettings()->GetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_SupersampleScale_Float) * 100.0f;
+
+			// Check for external resolution change compatibility
+			if (externalResChangeCompatibility && std::fabs(newRes - currentRes) > 0.001f && !manualRes)
+				manualRes = true;
+
 			// Fetch resolution and target fps
-			newRes = vr::VRSettings()->GetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_SupersampleScale_Float) * 100;
+			newRes = currentRes;
 			float lastRes = newRes;
 			targetFps = std::round(vr::VRSystem()->GetFloatTrackedDeviceProperty(0, Prop_DisplayFrequency_Float));
 			targetFrametime = 1000.0f / targetFps;
@@ -710,11 +746,11 @@ int main(int argc, char *argv[])
 					else if (vramOnlyMode && newRes < initialRes && vramUsed < vramTarget / 100.0f)
 					{
 						// When in VRAM-only mode, make sure the res goes back up when possible.
-						newRes = std::min(initialRes, newRes + resIncreaseMin);
+						newRes = std::min(initialRes, (int)std::round(newRes) + resIncreaseMin);
 					}
 
 					// Clamp the new resolution
-					newRes = std::clamp(newRes, minRes, maxRes);
+					newRes = std::clamp((int)std::round(newRes), minRes, maxRes);
 				}
 			}
 			else if ((appKey == "" || (resetOnThreshold && averageCpuTime < minCpuTimeThreshold)) && !manualRes)
@@ -829,7 +865,7 @@ int main(int argc, char *argv[])
 				{
 					ImGui::PushItemWidth(192);
 					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-					if (ImGui::SliderInt("", &newRes, 20, 500, "%d", ImGuiSliderFlags_AlwaysClamp))
+					if (ImGui::SliderFloat("", &newRes, 20.0f, 500.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp))
 					{
 						vr::VRSettings()->SetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_SupersampleScale_Float, newRes / 100.0f);
 					}
@@ -925,21 +961,45 @@ if (showSettings)
 		}
 		addTooltip(LanguageManager::getInstance().translate("Tooltip_data_average_samples").c_str());
 
-		if (ImGui::InputTextMultiline(LanguageManager::getInstance().translate("Disable_application").c_str(), &disabledApps, ImVec2(130, 60)))
-			disabledAppsSet = multilineStringToSet(disabledApps);
-		addTooltip(LanguageManager::getInstance().translate("Tooltip_disable_current_application").c_str());
+				ImGui::Checkbox("External res change compatibility", &externalResChangeCompatibility);
+				addTooltip("Automatically switch to manual resolution adjustment within the app when VR resolution is changed from an external source (SteamVR setting, Oyasumi, etc.) as to let the external source control the resolution. Does not automatically switch back to dynamic resolution adjustment.");
 
-		if (ImGui::Button(LanguageManager::getInstance().translate("Disable_current_application").c_str(), ImVec2(200, 26)))
-		{
-			std::string appKey = getCurrentApplicationKey();
-			if (!isApplicationDisabled(appKey))
-			{
-				disabledAppsSet.insert(appKey);
-				disabledApps += "\n" + appKey;
+				ImGui::Text("Blacklist");
+				addTooltip("Don't allow resolution changes in blacklisted applications.");
+				if (ImGui::InputTextMultiline("Blacklisted apps", &blacklistApps, ImVec2(130, 60), ImGuiInputTextFlags_CharsNoBlank))
+					blacklistAppsSet = multilineStringToSet(blacklistApps);
+				addTooltip("List of OpenVR application keys that should be blacklisted for resolution adjustment in the format \'steam.app.APPID\' (e.g. \'steam.app.620980\' for Beat Saber). One per line.");
+				if (ImGui::Button(LanguageManager::getInstance().translate("Disable_current_application").c_str(), ImVec2(160, 26)))
+				{
+					std::string appKey = getCurrentApplicationKey();
+					if (!isApplicationBlacklisted(appKey))
+					{
+						blacklistAppsSet.insert(appKey);
+						if (blacklistApps != "")
+							blacklistApps += "\n";
+						blacklistApps += appKey;
+					}
+				}
+				addTooltip("Adds the current application to the blacklist.");
+
+				ImGui::Checkbox("Enable whitelist", &whitelistEnabled);
+				addTooltip("Only allow resolution changes in whitelisted applications.");
+				if (ImGui::InputTextMultiline("Whitelisted apps", &whitelistApps, ImVec2(130, 60), ImGuiInputTextFlags_CharsNoBlank))
+					whitelistAppsSet = multilineStringToSet(whitelistApps);
+				addTooltip("List of OpenVR application keys that should be whitelisted for resolution adjustment in the format \'steam.app.APPID\' (e.g. \'steam.app.620980\' for Beat Saber). One per line.");
+				if (ImGui::Button("Whitelist current app", ImVec2(164, 26)))
+				{
+					std::string appKey = getCurrentApplicationKey();
+					if (!isApplicationWhitelisted(appKey))
+					{
+						whitelistAppsSet.insert(appKey);
+						if (whitelistApps != "")
+							whitelistApps += "\n";
+						whitelistApps += appKey;
+					}
+				}
+				addTooltip("Adds the current application to the whitelist.");
 			}
-		}
-		addTooltip(LanguageManager::getInstance().translate("Tooltip_disable_current_application").c_str());
-	}
 
     if (ImGui::CollapsingHeader(LanguageManager::getInstance().translate("Resolution").c_str()))
     {
