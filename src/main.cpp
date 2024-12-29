@@ -528,12 +528,13 @@ int main(int argc, char *argv[])
 #pragma endregion
 
 	// Load settings from ini file
-	if (!loadSettings()){
-	{
+	if (!loadSettings()) {
 		std::replace(blacklistApps.begin(), blacklistApps.end(), ' ', '\n'); // Set blacklist newlines
 		saveSettings();														 // Restore settings
+	} else {
+		settingFlag = true;
 	}
-		
+
 	setLanguage(languageIndex);
 
 	// Set auto-start
